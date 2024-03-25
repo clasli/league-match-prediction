@@ -1,0 +1,39 @@
+FEATURES
+
+OUTPUT: 
+> (Blue Side Team) Win / Loss
+
+INPUT: 
+(1) (R-B) Team Current Win % 
+- standardize ... via strength of schedule
+Team Picked Champions
+(2) consider REGION WINRATE
+(3) consider PLAYER WINRATE (consider first pick champs)
+(4) consider PATCH WINRATE
+(5) Game Momentum
+- if win prev. game ... does that have impact on current game?
+(6) Equalization (Time)
+- earned gpm difference (time modified)
+- kill difference (red + blue team)
+- how long does it take Team X to close the game against Team Y
+
+Later Features
+(5) Player Matchup + Stats
+- Top Matchup
+(6) Twitter? :D
+
+- - - - - 
+Silas
+> LogReg Feature 1, 5, 6
+> LogReg Impl
+
+Claire
+> Feature 2, 3, 4
+> Baseline Features
+> Baseline Impl
+> Neural Net?
+
+Both
+> NN Impl
+> Test diff regions + splits + predictoins
+> train_test_dev splits
