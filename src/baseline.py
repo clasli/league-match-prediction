@@ -30,6 +30,9 @@ def evaluate(X, y):
     print('Accuracy = {}'.format(accuracy))
     return accuracy
 
+def test(d):
+    d["hi"] = "hello"
+
 if __name__ == '__main__':
     X, y = read_data("../data/2023/2023_LCK_match_data_with_winrate.csv")
     evaluate(X, y)
