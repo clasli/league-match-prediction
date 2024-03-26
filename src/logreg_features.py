@@ -182,7 +182,7 @@ def create_F1_standardized_win_score(input_df, team_code_dict, F1_output_filenam
 
     return output_df
 
-def create_F2_region_champ_wr(input_df, wip_df, team_code_dict):
+def create_F2_region_champ_wr(input_df, wip_df):
     '''
     Feature 2: Champion winrate per region per split.
 
@@ -192,28 +192,32 @@ def create_F2_region_champ_wr(input_df, wip_df, team_code_dict):
     Things to consider:
         - fewer picks might not be as accurate
     '''
-    # create the headers for the output dataframe
-    # unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
-    # combined_headers = ['match_id', 'game', 'blue_team', 'red_team', 'result']
 
     # create dict data structure to store in-progress champ wr
     region_champ_wr = {}
 
-    # add new headers to wip_df
-    champ_headers = ["region_top_wr", "region_jg_wr", "region_mid_wr", "region_adc_wr", "region_sup_wr"]
-    for header in champ_headers:
-        wip_df[header] = None
+    # create a new df
+    champ_headers = ["gameid", "region_top_wr", "region_jg_wr", "region_mid_wr", "region_adc_wr", "region_sup_wr"]
+    output_df = pd.DataFrame(columns=champ_headers)
 
     # grab all the unique gameids from input_df
     gameids = input_df['gameid'].unique()
+
+    # keep track of current split
+    curr_split = ""
 
     for gameid in gameids: # iterate through all unique game_ids
         
         # get all rows with the same gameid
         game_df = input_df[input_df['gameid'] == gameid] 
 
-        # get index of wip_df
-        index = wip_df[wip_df['gameid'] == gameid].index.tolist()
+        # get current split
+        split = game_df['split'].iloc[0]
+
+        # start of new split
+        if split != curr_split:
+            region_champ_wr = {}
+            curr_split = split
 
         # calculate the win rate difference per lane (B-R)
         champ_data = []
@@ -245,13 +249,14 @@ def create_F2_region_champ_wr(input_df, wip_df, team_code_dict):
             else:
                 region_champ_wr[r_champ]['games'] += 1
 
-        # add columns to the output dataframe
-        for header, val in zip(champ_headers, champ_data):
-            wip_df.iloc[index, wip_df.columns.get_loc(header)] = val
+        # add new row to the output dataframe
+        row_data = [gameid] + [y for y in champ_data]
+        new_df = pd.DataFrame([row_data], columns=champ_headers)
+        output_df = pd.concat([output_df, new_df], ignore_index=True)
 
-def create_F3_player_champ_wr(input_df, team_code_dict):
+def create_F3_player_champ_wr(input_df, wip_df):
     '''
-    Feature 3: Champion winrate per player per split.
+    Feature 3: Champion winrate per player per year.
 
     Take the average of the winrates of all 5 champions.
     Winrate defaults to 0.5 (for first-time pick)
@@ -260,7 +265,58 @@ def create_F3_player_champ_wr(input_df, team_code_dict):
         - maybe this can be per year instead of per split? 
             since player mastery should be retained
     '''
-    pass
+    # create dict data structure to store in-progress champ wr
+    player_champ_wr = {}
+
+    # add new headers to wip_df
+    champ_headers = ["player_top_wr", "player_jg_wr", "player_mid_wr", "player_adc_wr", "player_sup_wr"]
+    for header in champ_headers:
+        wip_df[header] = None
+
+    # grab all the unique gameids from input_df
+    gameids = input_df['gameid'].unique()
+
+    for gameid in gameids: # iterate through all unique game_ids
+        
+        # get all rows with the same gameid
+        game_df = input_df[input_df['gameid'] == gameid] 
+
+        # get index of wip_df
+        index = wip_df[wip_df['gameid'] == gameid].index.tolist()
+
+        # calculate the win rate difference per lane (B-R)
+        champ_data = []
+        picks = ['pick1', 'pick2', 'pick3', 'pick4', 'pick5']
+        for p in picks:
+            b_champ = game_df[p].iloc[0]
+            r_champ = game_df[p].iloc[1]
+            
+            # edge cases where champ has never been picked
+            if b_champ not in player_champ_wr: 
+                player_champ_wr[b_champ] = {'wins': 0, 'games': 0}
+                b_wr = 0.5
+            else:
+                b_wr = player_champ_wr[b_champ]['wins'] / player_champ_wr[b_champ]['games']
+            if r_champ not in player_champ_wr:
+                player_champ_wr[r_champ] = {'wins': 0, 'games': 0} 
+                r_wr = 0.5
+            else:
+                r_wr = player_champ_wr[r_champ]['wins'] / player_champ_wr[r_champ]['games']
+
+            champ_data.append(round(b_wr - r_wr, 3))
+
+            # update total games played and won per champ
+            player_champ_wr[b_champ]['games'] += 1
+            player_champ_wr[r_champ]['games'] += 1
+
+            if game_df['result'].iloc[0] == 1:
+                player_champ_wr[b_champ]['wins'] += 1
+            else:
+                player_champ_wr[r_champ]['games'] += 1
+
+        # add columns to the output dataframe
+        for header, val in zip(champ_headers, champ_data):
+            wip_df.iloc[index, wip_df.columns.get_loc(header)] = val
 
 def create_F4_patch_champ_wr(input_df, team_code_dict):
     # dates up to curr patch, cross region
@@ -274,8 +330,8 @@ if __name__ == '__main__':
     
     F1_output_filename = "../data/2023/2023_LCK_LogReg_F1_standardized_win_score.csv"
     output_df = create_F1_standardized_win_score(game_data_df, team_code_dict, F1_output_filename, True)
-    create_F2_region_champ_wr(game_data_df, output_df, team_code_dict)
-
+    create_F2_region_champ_wr(game_data_df, output_df)
+    create_F3_player_champ_wr(game_data_df, output_df)
     export_df_to_csv(output_df, F1_output_filename)
 
 
