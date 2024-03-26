@@ -181,7 +181,7 @@ def create_F1_standardized_win_score(general_input_df, team_code_dict):
         match_id += 1
     return output_df
 
-def create_F2_region_champ_wr(input_df, wip_df):
+def create_F2_region_champ_wr(input_df):
     '''
     Feature 2: Champion winrate per region per split.
 
@@ -246,7 +246,7 @@ def create_F2_region_champ_wr(input_df, wip_df):
             if game_df['result'].iloc[0] == 1:
                 region_champ_wr[b_champ]['wins'] += 1
             else:
-                region_champ_wr[r_champ]['games'] += 1
+                region_champ_wr[r_champ]['wins'] += 1
 
         # add new row to the output dataframe
         row_data = [gameid] + [y for y in champ_data]
@@ -255,7 +255,7 @@ def create_F2_region_champ_wr(input_df, wip_df):
 
     return output_df
 
-def create_F3_player_champ_wr(input_df, wip_df):
+def create_F3_player_champ_wr(input_df):
     '''
     Feature 3: Champion winrate per player per year.
 
@@ -269,10 +269,9 @@ def create_F3_player_champ_wr(input_df, wip_df):
     # create dict data structure to store in-progress champ wr
     player_champ_wr = {}
 
-    # add new headers to wip_df
-    champ_headers = ["player_top_wr", "player_jg_wr", "player_mid_wr", "player_adc_wr", "player_sup_wr"]
-    for header in champ_headers:
-        wip_df[header] = None
+    # create a new df
+    champ_headers = ["gameid", "player_top_wr", "player_jg_wr", "player_mid_wr", "player_adc_wr", "player_sup_wr"]
+    output_df = pd.DataFrame(columns=champ_headers)
 
     # grab all the unique gameids from input_df
     gameids = input_df['gameid'].unique()
@@ -282,42 +281,55 @@ def create_F3_player_champ_wr(input_df, wip_df):
         # get all rows with the same gameid
         game_df = input_df[input_df['gameid'] == gameid] 
 
-        # get index of wip_df
-        index = wip_df[wip_df['gameid'] == gameid].index.tolist()
+        # should be size 10 for 10 players
+        if game_df.shape[0] != 10:
+            raise Exception('Improperly formed csv. Game {} does not have 10 players.'.format(gameid))
+
+        # get a list of [player, champ, win/loss]
+        players = []
+        for _, row in game_df.iterrows():
+            players.append([row['playerid'], row['champion'], row['result']])
 
         # calculate the win rate difference per lane (B-R)
         champ_data = []
-        picks = ['pick1', 'pick2', 'pick3', 'pick4', 'pick5']
-        for p in picks:
-            b_champ = game_df[p].iloc[0]
-            r_champ = game_df[p].iloc[1]
+        roles = ['top',]
+        for r in range(5):
+            b_player = players[r][0]
+            b_champ = players[r][1]
+            r_player = players[r+5][0]
+            r_champ = players[r+5][1]
             
             # edge cases where champ has never been picked
-            if b_champ not in player_champ_wr: 
-                player_champ_wr[b_champ] = {'wins': 0, 'games': 0}
+            if b_player not in player_champ_wr or b_champ not in player_champ_wr[b_player]: 
+                player_champ_wr[b_player] = {}
+                player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
                 b_wr = 0.5
             else:
-                b_wr = player_champ_wr[b_champ]['wins'] / player_champ_wr[b_champ]['games']
-            if r_champ not in player_champ_wr:
-                player_champ_wr[r_champ] = {'wins': 0, 'games': 0} 
+                b_wr = player_champ_wr[b_player][b_champ]['wins'] / player_champ_wr[b_player][b_champ]['games']
+            if r_player not in player_champ_wr or r_champ not in player_champ_wr[r_player]: 
+                player_champ_wr[r_player] = {}
+                player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
                 r_wr = 0.5
             else:
-                r_wr = player_champ_wr[r_champ]['wins'] / player_champ_wr[r_champ]['games']
-
+                r_wr = player_champ_wr[r_player][r_champ]['wins'] / player_champ_wr[r_player][r_champ]['games']
+            
             champ_data.append(round(b_wr - r_wr, 3))
 
             # update total games played and won per champ
-            player_champ_wr[b_champ]['games'] += 1
-            player_champ_wr[r_champ]['games'] += 1
+            player_champ_wr[b_player][b_champ]['games'] += 1
+            player_champ_wr[r_player][r_champ]['games'] += 1
 
-            if game_df['result'].iloc[0] == 1:
-                player_champ_wr[b_champ]['wins'] += 1
+            if players[r][2] == 1:
+                player_champ_wr[b_player][b_champ]['wins'] += 1
             else:
-                player_champ_wr[r_champ]['games'] += 1
+                player_champ_wr[r_player][r_champ]['wins'] += 1
 
-        # add columns to the output dataframe
-        for header, val in zip(champ_headers, champ_data):
-            wip_df.iloc[index, wip_df.columns.get_loc(header)] = val
+        # add new row to the output dataframe
+        row_data = [gameid] + [y for y in champ_data]
+        new_df = pd.DataFrame([row_data], columns=champ_headers)
+        output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+    return output_df
 
 def create_F4_patch_champ_wr(input_df, team_code_dict):
     # dates up to curr patch, cross region
@@ -330,6 +342,10 @@ if __name__ == '__main__':
     # pull the main soruce of data from general input csv
     filename = '../data/2023/2023_LCK_match_data_team.csv'
     general_input_df = create_df(filename) 
+
+    # pull the individual player data
+    filename = '../data/2023/2023_LCK_match_data_individual.csv'
+    individual_input_df = create_df(filename) 
     
     # specify output df and csv
     output_filename = "../data/2023/2023_LCK_LogReg_Dataset.csv"
@@ -338,12 +354,16 @@ if __name__ == '__main__':
     F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)
 
     # print(output_df.head())
-    F2_output_df = create_F2_region_champ_wr(general_input_df, team_code_dict)
+    F2_output_df = create_F2_region_champ_wr(general_input_df)
+
+    # F3 result (per player champion wr)
+    F3_output_df = create_F3_player_champ_wr(individual_input_df)
 
     # Adding features to the desired final df 
     output_df = pd.DataFrame()
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
+    output_df = pd.concat([output_df, F3_output_df], axis=1)
 
     # export output df as csv
     export_df_to_csv(output_df, output_filename)

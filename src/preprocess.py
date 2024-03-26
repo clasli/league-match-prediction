@@ -26,14 +26,21 @@ def extract_team_stats(df):
     df_team = df[df['position'] == 'team']
     return df_team
 
+def extract_individual_stats(df):
+    # only take df rows where postion is NOT 'team'
+    df_team = df[df['position'] != 'team']
+    return df_team
+
 if __name__ == "__main__":
     df_2023 = create_df(match_data_2023_file)
     
-    df_2023_lck_individual = create_league_df(df_2023,'LCK')
-    export_df_to_csv(df_2023_lck_individual, '../data/2023/2023_LCK_match_data_individual.csv')
+    df_2023_lck = create_league_df(df_2023,'LCK')
 
-    df_2023_lck_team = extract_team_stats(df_2023_lck_individual)
+    df_2023_lck_team = extract_team_stats(df_2023_lck)
     export_df_to_csv(df_2023_lck_team, '../data/2023/2023_LCK_match_data_team.csv')
+
+    df_2023_lck_individual = extract_individual_stats(df_2023_lck)
+    export_df_to_csv(df_2023_lck_individual, '../data/2023/2023_LCK_match_data_individual.csv')
 
     LCK_2023_X, LCK_2023_y = split_feature_target(df_2023_lck_team)
 
