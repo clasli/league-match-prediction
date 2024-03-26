@@ -42,6 +42,9 @@ if __name__ == "__main__":
     df_2023_lck_individual = extract_individual_stats(df_2023_lck)
     export_df_to_csv(df_2023_lck_individual, '../data/2023/2023_LCK_match_data_individual.csv')
 
+    df_2023_all_team = extract_individual_stats(df_2023)
+    export_df_to_csv(df_2023_all_team, '../data/2023/2023_ALL_match_data_individual.csv')
+
     LCK_2023_X, LCK_2023_y = split_feature_target(df_2023_lck_team)
 
     ### DEBUG ###

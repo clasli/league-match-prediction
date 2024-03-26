@@ -372,14 +372,21 @@ def create_F3_player_champ_wr(input_df):
             r_champ = players[r+5][1]
             
             # edge cases where champ has never been picked
-            if b_player not in player_champ_wr or b_champ not in player_champ_wr[b_player]: 
+            if b_player not in player_champ_wr: 
                 player_champ_wr[b_player] = {}
+                player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
+                b_wr = 0.5
+            elif b_champ not in player_champ_wr[b_player]:
                 player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
                 b_wr = 0.5
             else:
                 b_wr = player_champ_wr[b_player][b_champ]['wins'] / player_champ_wr[b_player][b_champ]['games']
-            if r_player not in player_champ_wr or r_champ not in player_champ_wr[r_player]: 
+            
+            if r_player not in player_champ_wr: 
                 player_champ_wr[r_player] = {}
+                player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
+                r_wr = 0.5
+            elif r_champ not in player_champ_wr[r_player]:
                 player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
                 r_wr = 0.5
             else:
@@ -403,21 +410,105 @@ def create_F3_player_champ_wr(input_df):
 
     return output_df
 
-def create_F4_patch_champ_wr(input_df, team_code_dict):
-    # dates up to curr patch, cross region
-    pass
+def create_F4_patch_champ_wr(input_df, one_region_input_df):
+    '''
+    Feature 4: Champion winrate per patch, across all regions.
+
+    Things to consider:
+        - maybe this can be per year instead of per split? 
+            since player mastery should be retained
+    '''
+    # create dict data structure to store in-progress champ wr
+    patch_champ_wr = {}
+
+    # create a new df
+    champ_headers = ["gameid", "patch_top_wr", "patch_jg_wr", "patch_mid_wr", "patch_adc_wr", "patch_sup_wr"]
+    output_df = pd.DataFrame(columns=champ_headers)
+
+    # grab all the unique gameids from input_df
+    gameids = input_df['gameid'].unique()
+
+    # grab all the unique gameids from the one_region_input_df
+    gameid_subset = one_region_input_df['gameid'].unique()
+
+    # track current patch
+    curr_patch = ""
+
+    for gameid in gameids: # iterate through all unique game_ids
+
+        # get all rows with the same gameid
+        game_df = input_df[input_df['gameid'] == gameid] 
+
+        # get current patch
+        patch = game_df['patch'].iloc[0]
+
+        # start of new split
+        if patch != curr_patch:
+            patch_champ_wr = {}
+            curr_patch = patch
+
+        # should be size 10 for 10 players
+        if game_df.shape[0] != 10:
+            raise Exception('Improperly formed csv. Game {} does not have 10 players.'.format(gameid))
+
+        # get a list of [player, champ, win/loss]
+        players = []
+        for _, row in game_df.iterrows():
+            players.append([row['playerid'], row['champion'], row['result']])
+
+        # calculate the win rate difference per lane (B-R)
+        champ_data = []
+        roles = ['top',]
+        for r in range(5):
+            b_champ = players[r][1]
+            r_champ = players[r+5][1]
+            
+            
+            if b_champ not in patch_champ_wr:
+                patch_champ_wr[b_champ] = {'wins': 0, 'games': 0}
+                b_wr = 0.5
+            elif gameid in gameid_subset: # only calculate wr if game is from desired region
+                b_wr = patch_champ_wr[b_champ]['wins'] / patch_champ_wr[b_champ]['games']
+            
+            if r_champ not in patch_champ_wr:
+                patch_champ_wr[r_champ] = {'wins': 0, 'games': 0}
+                r_wr = 0.5
+            elif gameid in gameid_subset: # only calculate wr if game is from desired region
+                r_wr = patch_champ_wr[r_champ]['wins'] / patch_champ_wr[r_champ]['games']
+        
+            if gameid in gameid_subset: # only calculate wr if game is from desired region
+                champ_data.append(round(b_wr - r_wr, 3))
+
+            # update total games played and won per champ
+            patch_champ_wr[b_champ]['games'] += 1
+            patch_champ_wr[r_champ]['games'] += 1
+
+            if players[r][2] == 1:
+                patch_champ_wr[b_champ]['wins'] += 1
+            else:
+                patch_champ_wr[r_champ]['wins'] += 1
+
+        # add new row to the output dataframe (only if game is from desired region)
+        if gameid in gameid_subset:
+            row_data = [gameid] + [y for y in champ_data]
+            new_df = pd.DataFrame([row_data], columns=champ_headers)
+            output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+    return output_df
 
 if __name__ == '__main__':
     # init all the team codes for each team name
     team_code_dict = initialize_team_code_dict()
 
-    # pull the main soruce of data from general input csv
+    # pull data from input csvs
     filename = '../data/2023/2023_LCK_match_data_team.csv'
     general_input_df = create_df(filename) 
 
-    # pull the individual player data
     filename = '../data/2023/2023_LCK_match_data_individual.csv'
     individual_input_df = create_df(filename) 
+
+    filename = '../data/2023/2023_ALL_match_data_individual.csv'
+    all_regions_input_df = create_df(filename) 
     
     # specify output df and csv
     output_filename = "../data/2023/2023_LCK_LogReg_Dataset.csv"
@@ -425,25 +516,24 @@ if __name__ == '__main__':
     # add feature data to output df
     F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)
 
-    # print(output_df.head())
-    F2_output_df = create_F2_region_champ_wr(general_input_df)
+    # F2 result (per region champion wr)
+    F2_output_df = create_F2_region_champ_wr(individual_input_df)
 
     # F3 result (per player champion wr)
     F3_output_df = create_F3_player_champ_wr(individual_input_df)
+
+    # F4 result (per patch champion wr)
+    F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
 
     # Adding features to the desired final df 
     output_df = pd.DataFrame()
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
     output_df = pd.concat([output_df, F3_output_df], axis=1)
+    output_df = pd.concat([output_df, F4_output_df], axis=1)
 
     # export output df as csv
     export_df_to_csv(output_df, output_filename)
-
-
-
-
-
 
     # note that "BRION" and "OKSavingsBank BRION" are the same team, should replace to "BRION" for consistency
     # team_list = [team.replace('OKSavingsBank BRION', 'BRION') for team in team_list]
