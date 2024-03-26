@@ -223,18 +223,18 @@ def create_F2_region_champ_wr(input_df, wip_df, team_code_dict):
             r_champ = game_df[p].iloc[1]
             
             # edge cases where champ has never been picked
-            if region_champ_wr[b_champ]['games'] == 0: 
+            if b_champ not in region_champ_wr: 
                 region_champ_wr[b_champ] = {'wins': 0, 'games': 0}
                 b_wr = 0.5
             else:
                 b_wr = region_champ_wr[b_champ]['wins'] / region_champ_wr[b_champ]['games']
-            if region_champ_wr[r_champ]['games'] == 0:
+            if r_champ not in region_champ_wr:
                 region_champ_wr[r_champ] = {'wins': 0, 'games': 0} 
                 r_wr = 0.5
             else:
                 r_wr = region_champ_wr[r_champ]['wins'] / region_champ_wr[r_champ]['games']
 
-            champ_data.append(b_wr - r_wr)
+            champ_data.append(round(b_wr - r_wr, 3))
 
             # update total games played and won per champ
             region_champ_wr[b_champ]['games'] += 1
