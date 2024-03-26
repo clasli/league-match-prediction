@@ -1,4 +1,6 @@
 import pandas as pd
+import statistics
+import sys
 
 ############
 ### UTIL ###
@@ -111,24 +113,30 @@ def create_F1_standardized_win_score(general_input_df, team_code_dict):
 
     # create the headers for the output dataframe
     unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
-    combined_headers = ['match_id', 'gameid', 'game', 'blue_team', 'red_team', 'result'] + unique_team_codes
+    combined_headers = ['gameid', 'game', 'blue_team', 'red_team', 'result'] + unique_team_codes
 
     # create the output dataframe
     output_df = pd.DataFrame(columns=combined_headers)
 
     # create dict data structure to store in-progress total games, wins, and losses for each team, using team_code_dict values (each team code should have 3 vals)
+    # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
     F1_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
 
-    # grab all the unique gameids from input_df
+    # grab all the unique gameids f rom input_df
     gameids = general_input_df['gameid'].unique()
-
-    # setup relative match_id
-    match_id = 1
 
     for gameid in gameids: # iterate through all unique game_ids
         
         # get all rows with the same gameid
         game_df = general_input_df[general_input_df['gameid'] == gameid] 
+
+        # # skip this gameid if this is NOT a spring split game
+        # if game_df['split'].iloc[0] != 'Spring':
+        #     continue
+
+        # # skip this gameid if this is NOT a regular season game
+        # if game_df['playoffs'].iloc[0] == 1:
+        #     continue
 
         # determine which game it is (1 or 2)
         game = "game_" + str(game_df['game'].iloc[0])
@@ -145,40 +153,104 @@ def create_F1_standardized_win_score(general_input_df, team_code_dict):
             result = team_code_dict[game_df['teamname'].iloc[1]]
             # print(result + " won" + " gameid: " + str(gameid))
 
-        # update the in-progress total games, wins, and losses for each team
+        # store the match data in a list
+        match_data = [gameid, game, blue_team, red_team, result]
             
+        # Calculate the team Weighted Win Percentage (WWP)
+        # Formula: Weighted Win Percentage (WWP) = TWP (Team Win Percentage) * SOS (Strength of Schedule)
+        epsilon = 1e-6
+        dec_pts = 4
+
+        # TWP Updates to Total Games, Wins, Losses
         # update total games played
         F1_wr_dict[blue_team][0] += 1
         F1_wr_dict[red_team][0] += 1
 
-        if result == blue_team: # update blue team win, red team loss
+        # F1_wr_dict[team_code][0] >= 1 symbolizes that a team has played at least one game... loop + determine how many teams have played at least one game and store into "effective_teams"
+        effective_teams = len([team_code for team_code in unique_team_codes if F1_wr_dict[team_code][0] >= 1])
+        
+        if effective_teams > 10:
+            print("Error: More than 10 teams have played at least one game")
+            sys.exit()
+
+        # (if) update blue team win, red team loss
+        if result == blue_team: 
             F1_wr_dict[blue_team][1] += 1
             F1_wr_dict[red_team][2] += 1
 
-        elif result == red_team: # update red team win, blue team loss
+        # (elif) update red team win, blue team loss
+        elif result == red_team: 
             F1_wr_dict[red_team][1] += 1
             F1_wr_dict[blue_team][2] += 1
 
-        # store the match data in a list
-        match_data = [match_id, gameid, game, blue_team, red_team, result]
-            
-        # calculate the standardized win score per team (and store in a list)
-        team_cwr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # TWP Calculation  
+        twp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        
         team_num = 0
         for team_code in unique_team_codes:
             if F1_wr_dict[team_code][0] == 0: # edge case where team has not played any games yet
-                team_cwr[team_num] = 0
-            else:
-                team_cwr[team_num] = round(F1_wr_dict[team_code][1] / F1_wr_dict[team_code][0], 2)
+                twp[team_num] = 0
+            else: # if a team has played at minimum 1 game
+                twp[team_num] = round(F1_wr_dict[team_code][1] / F1_wr_dict[team_code][0], dec_pts) # calculate (wins/total_games) # ROUND
             team_num += 1
 
+        # print("twp: ", twp) # debug
+
+        # SOS Calculation - Average Opponent TWP (to date)
+        sos = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        team_num = 0
+        for team_code in unique_team_codes:
+            sos[team_num] = round((sum(twp) - twp[team_num]) / (effective_teams - 1), dec_pts) # can calculate even if the team has not played yet # ROUND
+            team_num += 1
+
+        # print("sos: ", sos) # debug
+                        
+        # WWP Calculation
+        wwp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        team_num = 0
+        for team_code in unique_team_codes:
+            # if total games for a team is 0, then os_twp = win_percentage * strength_of_schedule / (total_games + epsilon)
+            if F1_wr_dict[team_code][0] == 0:
+                WWP = twp[team_num] * sos[team_num] / (F1_wr_dict[team_code][0] + epsilon)
+                wwp[team_num] = round(WWP, dec_pts)
+            else:
+                WWP = twp[team_num] * sos[team_num]
+                wwp[team_num] = round(WWP, dec_pts)
+
+            team_num += 1
+
+        # print("wwp: ", wwp) # debug
+        
+        # Standardized WWP Calculation
+        standardized_wwp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        WWP_mean = statistics.mean(wwp)
+        # print("WWP Mean: " + str(WWP_mean)) # debug
+        WWP_std = statistics.stdev(wwp)
+        team_num = 0
+        for team_code in unique_team_codes:
+            if (WWP_std == 0):
+                standardized_wwp[team_num] = 0
+            else: 
+                standardized_wwp[team_num] = round((wwp[team_num] - WWP_mean) / (WWP_std), dec_pts)
+            team_num += 1
+
+        # print("standardized_wwp: ", standardized_wwp, "\n") # debug
+
+        # DEBUG: create new dictionary mapping team code to twp, sort and print by descending twp
+        # twp_dict = {team_code: twp[i] for i, team_code in enumerate(unique_team_codes)}
+        # sorted_twp = sorted(twp_dict.items(), key=lambda x: x[1], reverse=True)
+        # print("sorted twp: ", sorted_twp)
+
+        # DEBUG: create new dictionary mapping team code to standardized_wwp, sort and print by descending
+        # standardized_wwp_dict = {team_code: standardized_wwp[i] for i, team_code in enumerate(unique_team_codes)}
+        # sorted_standardized_wwp = sorted(standardized_wwp_dict.items(), key=lambda x: x[1], reverse=True)
+        # print("sorted standardized_wwp: ", sorted_standardized_wwp)
+
         # add the row_data list to the output dataframe
-        row_data = [x for x in match_data] + [y for y in team_cwr]
+        row_data = [x for x in match_data] + [y for y in standardized_wwp]
         new_df = pd.DataFrame([row_data], columns=combined_headers)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
-        # increase match_id
-        match_id += 1
     return output_df
 
 def create_F2_region_champ_wr(input_df):
