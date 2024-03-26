@@ -1,7 +1,8 @@
 import pandas as pd
 
-filename = '../data/2023/2023_LCK_match_data_team.csv'
-
+############
+### UTIL ###
+############
 def initialize_team_code_dict():
     team_code_dict = {}
     team_code_dict['BRION'] = 'BRION'
@@ -15,7 +16,6 @@ def initialize_team_code_dict():
     team_code_dict['Nongshim RedForce'] = 'NS'
     team_code_dict['OKSavingsBank BRION'] = 'BRION'
     team_code_dict['T1'] = 'T1'
-
     return team_code_dict
 
 def get_list_team_code_dict(team_code_dict):
@@ -29,6 +29,9 @@ def get_unique_teams(df):
     teams = df['teamname'].unique()
     return teams
 
+################
+### CLEAN UP ### 
+################
 def refine_data(df):
     # ensure that all data is complete (if we will use that row for match prediction)
     df = df[df['datacompleteness'] == 'complete']
@@ -104,7 +107,7 @@ def export_df_to_csv(df, filename):
 
 """
 # implements the above explanation of feature
-def create_F1_standardized_win_score(input_df, team_code_dict, F1_output_filename, export_csv):
+def create_F1_standardized_win_score(general_input_df, team_code_dict):
 
     # create the headers for the output dataframe
     unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
@@ -117,7 +120,7 @@ def create_F1_standardized_win_score(input_df, team_code_dict, F1_output_filenam
     F1_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
 
     # grab all the unique gameids from input_df
-    gameids = input_df['gameid'].unique()
+    gameids = general_input_df['gameid'].unique()
 
     # setup relative match_id
     match_id = 1
@@ -125,7 +128,7 @@ def create_F1_standardized_win_score(input_df, team_code_dict, F1_output_filenam
     for gameid in gameids: # iterate through all unique game_ids
         
         # get all rows with the same gameid
-        game_df = input_df[input_df['gameid'] == gameid] 
+        game_df = general_input_df[general_input_df['gameid'] == gameid] 
 
         # determine which game it is (1 or 2)
         game = "game_" + str(game_df['game'].iloc[0])
@@ -176,10 +179,6 @@ def create_F1_standardized_win_score(input_df, team_code_dict, F1_output_filenam
 
         # increase match_id
         match_id += 1
-
-    if export_csv:
-        export_df_to_csv(output_df, F1_output_filename)
-
     return output_df
 
 def create_F2_region_champ_wr(input_df, wip_df, team_code_dict):
@@ -267,16 +266,29 @@ def create_F4_patch_champ_wr(input_df, team_code_dict):
     pass
 
 if __name__ == '__main__':
+    # init all the team codes for each team name
     team_code_dict = initialize_team_code_dict()
 
-    game_data_df = create_df(filename)
-    # print(game_data_df.head())
+    # pull the main soruce of data from general input csv
+    filename = '../data/2023/2023_LCK_match_data_team.csv'
+    general_input_df = create_df(filename) 
     
-    F1_output_filename = "../data/2023/2023_LCK_LogReg_F1_standardized_win_score.csv"
-    output_df = create_F1_standardized_win_score(game_data_df, team_code_dict, F1_output_filename, True)
-    create_F2_region_champ_wr(game_data_df, output_df, team_code_dict)
+    # specify output df and csv
+    output_filename = "../data/2023/2023_LCK_LogReg_Dataset.csv"
 
-    export_df_to_csv(output_df, F1_output_filename)
+    # add feature data to output df
+    F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)
+
+    # print(output_df.head())
+    F2_output_df = create_F2_region_champ_wr(general_input_df, team_code_dict)
+
+    # Adding features to the desired final df 
+    output_df = pd.DataFrame()
+    output_df = pd.concat([output_df, F1_output_df], axis=1)
+    output_df = pd.concat([output_df, F2_output_df], axis=1)
+
+    # export output df as csv
+    export_df_to_csv(output_df, output_filename)
 
 
 
@@ -286,3 +298,9 @@ if __name__ == '__main__':
     # note that "BRION" and "OKSavingsBank BRION" are the same team, should replace to "BRION" for consistency
     # team_list = [team.replace('OKSavingsBank BRION', 'BRION') for team in team_list]
 
+
+
+## INIT ##
+# (1) Utility Class for Re-Useable Functions
+# (2) Feature Class (init method, create method, update method)
+# (3) Refine Data Function 
