@@ -73,7 +73,7 @@ def calculate_wr(input_df):
 
         # Start of new split
         if split != curr_split:
-            win_rates = {}
+            # win_rates = {}
             curr_split = split
 
         # in game_df, find teamname
@@ -112,14 +112,22 @@ def calculate_wr(input_df):
     return output_df
 
 if __name__ == "__main__":
-    df_2023 = create_df(match_data_2024_file)
+    df_2023 = create_df(match_data_2023_file)
+    # df_2024 = create_df(match_data_2024_file)
     
-    df_2023_lck_individual = create_league_df(df_2023,'LEC')
+    df_2023_lck_individual = create_league_df(df_2023,'LCK')
+    # df_2024_lck_individual = create_league_df(df_2024,'LCK')
     df_2023_lck_team = extract_team_stats(df_2023_lck_individual)
+    # df_2024_lck_team = extract_team_stats(df_2024_lck_individual)
     df_2023_lck_with_winrate_separate = calculate_wr(df_2023_lck_team)
+    # df_2024_lck_with_winrate_separate = calculate_wr(df_2024_lck_team)
     # df_2023_lck_with_winrate = combine_rows(df_2023_lck_with_winrate_separate)
 
-    export_df_to_csv(df_2023_lck_with_winrate_separate, '../data/2023/2023_LCK_match_data_with_winrate.csv')
+    # add df-2023 and df-2024 rows on top of each other
+    df_2023_2024 = df_2023_lck_with_winrate_separate
+    # df_2023_2024 = pd.concat([df_2023_lck_with_winrate_separate, df_2024_lck_with_winrate_separate], ignore_index=True)
+
+    export_df_to_csv(df_2023_2024, '../data/2023/2023_LCK_match_data_with_winrate.csv')
 
     LCK_2023_X, LCK_2023_y = split_feature_target(df_2023_lck_team)
 

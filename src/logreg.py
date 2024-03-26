@@ -69,28 +69,28 @@ def parse_args():
     parser.add_argument('--plot-weights')
     return parser.parse_args()
 
-def read_data(filename):
-    df = pd.read_csv(filename, index_col=0)
+def read_data(input_df):
 
     # Shuffle the DataFrame
-    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+    df = input_df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     # Define features (X) and target (y)
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
     
-    # Split the data into train, test, and dev sets (50/25/25 split)
-    X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.5, random_state=42)
-    X_test, X_dev, y_test, y_dev = train_test_split(X_test_dev, y_test_dev, test_size=0.5, random_state=42)
+    # Split the data into train, test, and dev sets (70/10/20 split)
+    X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, random_state=42)
 
 
     return X_train, y_train, X_dev, y_dev, X_test, y_test
 
 def main():
     # Read the data
-    input_file = "../data/2023/2023_LCK_LogReg_Dataset.csv"
-    X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_file)
+    input_csv = "../data/2023/2023_LCK_LogReg_Dataset.csv"
+    input_df = pd.read_csv(input_csv, index_col=0)
+    X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
 
     # all_data = np.load('q1_data.npy', allow_pickle=True).item()
     # X_train = all_data['X_train']

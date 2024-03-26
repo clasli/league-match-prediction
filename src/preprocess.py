@@ -33,7 +33,9 @@ def extract_individual_stats(df):
 
 if __name__ == "__main__":
     df_2023 = create_df(match_data_2023_file)
-    
+    # df_2024 = create_df(match_data_2024_file)
+    # df_2023 = pd.concat([df_2023, df_2024], ignore_index=True)
+
     df_2023_lck = create_league_df(df_2023,'LCK')
 
     df_2023_lck_team = extract_team_stats(df_2023_lck)

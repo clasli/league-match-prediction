@@ -15,6 +15,7 @@ def initialize_team_code_dict():
     team_code_dict['Kwangdong Freecs'] = 'KDF'
     team_code_dict['KT Rolster'] = 'KT'
     team_code_dict['Liiv SANDBOX'] = 'LSB'
+    team_code_dict['FearX'] = 'LSB'
     team_code_dict['Nongshim RedForce'] = 'NS'
     team_code_dict['OKSavingsBank BRION'] = 'BRION'
     team_code_dict['T1'] = 'T1'
@@ -267,6 +268,9 @@ def create_F1_modified(general_input_df, team_code_dict):
     # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
     F1_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
 
+    # keep track of current split
+    curr_split = ""
+
     # grab all the unique gameids f rom input_df
     gameids = general_input_df['gameid'].unique()
 
@@ -274,6 +278,12 @@ def create_F1_modified(general_input_df, team_code_dict):
         
         # get all rows with the same gameid
         game_df = general_input_df[general_input_df['gameid'] == gameid] 
+
+        # start of new split, rst wr
+        split = game_df['split'].iloc[0]
+        if split != curr_split:
+            F1_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
+            curr_split = split
 
         # # skip this gameid if this is NOT a spring split game
         # if game_df['split'].iloc[0] != 'Spring':

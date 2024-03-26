@@ -37,3 +37,10 @@ Both
 > NN Impl
 > Test diff regions + splits + predictoins
 > train_test_dev splits
+
+
+# not enough data
+# not enough features 
+# linear model ... maybe there is a non-linear relationship
+# time-impacted features ?? does time play a factor
+# seperate winrate by split (f1)
