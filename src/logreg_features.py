@@ -253,6 +253,8 @@ def create_F2_region_champ_wr(input_df, wip_df):
         new_df = pd.DataFrame([row_data], columns=champ_headers)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
+    return output_df
+
 def create_F3_player_champ_wr(input_df, wip_df):
     '''
     Feature 3: Champion winrate per player per year.
