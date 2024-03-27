@@ -16,6 +16,9 @@ NEGATIVE_CLASS = '5'  # Represented as y=-1
 POSITIVE_CLASS = '8'  # Represented as y=+1
 IMAGE_SHAPE = (28, 28)  # Size of MNIST images
 
+gameids = []
+gamenum = []
+
 def predict(w, X):
     """Return the predictions using weight vector w on inputs X.
 
@@ -57,6 +60,16 @@ def evaluate(w, X, y, name):
     """Measure and print accuracy of a predictor on a dataset."""
     y_preds = predict(w, X)
     acc = np.mean(y_preds == y)
+
+    c = 0
+    total = len(y)
+    if gameids and gamenum:
+        for i, (pred, y) in enumerate(zip(y_preds, y)):
+            if pred != y:
+                print("[{}] {}".format(gamenum[i], gameids[i]))
+                c += 1
+    print(str(c) + " of " + str(total) +" incorrect")
+
     print('    {} Accuracy: {}'.format(name, acc))
     return acc
 
@@ -70,12 +83,16 @@ def parse_args():
     parser.add_argument('--plot-weights')
     return parser.parse_args()
 
-def read_data(input_df):
+def read_data(df):
 
     # Shuffle the DataFrame
-    df = input_df.sample(frac=1, random_state=42).reset_index(drop=True)
+    # df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
+    
     # Define features (X) and target (y)
+    global gameids, gamenum
+    gameids = df['gameid'].tolist()
+    gamenum = df['momentum'].tolist()
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
@@ -85,13 +102,13 @@ def read_data(input_df):
     X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, random_state=42)
 
 
-    return X_train, y_train, X_dev, y_dev, X_test, y_test
+    return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
 
 def main():
     # Read the data
     input_csv = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
     input_df = pd.read_csv(input_csv, index_col=0)
-    X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
+    gameids, X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
 
     # all_data = np.load('q1_data.npy', allow_pickle=True).item()
     # X_train = all_data['X_train']
