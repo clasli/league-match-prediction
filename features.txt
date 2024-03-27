@@ -23,6 +23,7 @@ Later Features
 - how long does it take Team X to close the game against Team Y
 (8) Momentum
 - if A smashes B in game 1 (gold, kills, stats), then more likely to win game 2? 
+(9) Recency Weights ... closer games should be more weighted + impactful on output
 
 - - - - - 
 Silas

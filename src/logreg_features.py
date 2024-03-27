@@ -537,6 +537,9 @@ def create_F5_team_momentum(input_df):
     # keep track of current split
     curr_split = ""
 
+    # keep track of a list of game_df
+    game_df_list = []
+
     for gameid in gameids: # iterate through all unique game_ids
         
         # get all rows with the same gameid
@@ -554,24 +557,35 @@ def create_F5_team_momentum(input_df):
         game = game_df['game'].iloc[0]
 
         # if game is the first game of the series, then momentum is 0
-        if game == 1:
-            momentum = 0
+    
+        momentum = 0 # start by momentum being 0 because will modify it later
 
         if game >= 2:
             # get the result of the previous game
-            prev_game = game_df['result'].iloc[0]
-            if prev_game == 1:
+            # identify the previous iterated game_df from game_df_list
+            prev_game_df = game_df_list[-1]
+
+            # make sure the "game" field of prev_game_df is 1 less than the current "game" value from game_df
+            if (prev_game_df['game'].iloc[0]) != (game - 1):
+                prev_game_df = game_df_list[-2]
+                if (prev_game_df['game'].iloc[0]) != (game - 1):
+                    raise Exception('Improperly formed csv. Game {} does not have a previous game.'.format(gameid))
+
+            prev_game_result = prev_game_df['result'].iloc[0]
+            if prev_game_result == 1:
                 momentum = 0.5
             else:
                 momentum = -0.5
         
         if game >= 3:
             # get the result of the last two games
-            prev_game = game_df['result'].iloc[0]
-            prev_prev_game = game_df['result'].iloc[1]
-            if prev_game == 1 and prev_prev_game == 1:
+            prev_game_df = game_df_list[-1]
+            prev_game_2_df = game_df_list[-2]
+            prev_game_result = prev_game_df['result'].iloc[0]
+            prev_game_2_result = prev_game_2_df['result'].iloc[0]
+            if prev_game_result == 1 and prev_game_2_result == 1:
                 momentum = 1
-            elif prev_game == 0 and prev_prev_game == 0:
+            elif prev_game_result == 0 and prev_game_2_result == 0:
                 momentum = -1
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
@@ -581,6 +595,9 @@ def create_F5_team_momentum(input_df):
         row_data = {"momentum": [momentum]}
         new_df = pd.DataFrame(row_data)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+        # add game_df to game_df_list
+        game_df_list.append(game_df)
 
     return output_df
 
