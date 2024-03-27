@@ -529,9 +529,13 @@ def create_F5_team_momentum(input_df):
 
     # create a new df
     momentum_headers = ["momentum"]
-    output_df = pd.DataFrame(columns=momentum_headers)
+    output_df = pd.DataFrame(columns=momentum_headers)    
 
-    # grab all the unique gameids from input_df
+    # create dict data structure to store in-progress total games, wins, and losses for each team, using team_code_dict values (each team code should have 3 vals)
+    # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
+    unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
+    F5_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
+
     gameids = input_df['gameid'].unique()
 
     # keep track of current split
@@ -556,9 +560,13 @@ def create_F5_team_momentum(input_df):
         # get the "game" of the game_df
         game = game_df['game'].iloc[0]
 
+        # in game_df, find teamname and determine team code from team_code_dict
+        blue_team = team_code_dict[game_df['teamname'].iloc[0]]
+        red_team = team_code_dict[game_df['teamname'].iloc[1]]        
+
         # if game is the first game of the series, then momentum is 0
-    
-        momentum = 0 # start by momentum being 0 because will modify it later
+        F5_wr_dict[blue_team][0] = 0  # start by momentum being 0 because will modify it later
+        F5_wr_dict[red_team][0] = 0 
 
         if game >= 2:
             # get the result of the previous game
@@ -573,9 +581,11 @@ def create_F5_team_momentum(input_df):
 
             prev_game_result = prev_game_df['result'].iloc[0]
             if prev_game_result == 1:
-                momentum = 0.5
+                F5_wr_dict[blue_team][0] = 0.5
+                F5_wr_dict[red_team][0] = -0.5
             else:
-                momentum = -0.5
+                F5_wr_dict[blue_team][0] = -0.5
+                F5_wr_dict[red_team][0] = 0.5
         
         if game >= 3:
             # get the result of the last two games
@@ -584,20 +594,26 @@ def create_F5_team_momentum(input_df):
             prev_game_result = prev_game_df['result'].iloc[0]
             prev_game_2_result = prev_game_2_df['result'].iloc[0]
             if prev_game_result == 1 and prev_game_2_result == 1:
-                momentum = 1
+                F5_wr_dict[blue_team][0] = 1
+                F5_wr_dict[red_team][0] = -1
             elif prev_game_result == 0 and prev_game_2_result == 0:
-                momentum = -1
+                F5_wr_dict[blue_team][0] = -1
+                F5_wr_dict[red_team][0] = 1
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
 
 
         # add new row to the output dataframe
-        row_data = {"momentum": [momentum]}
+        row_data = {"momentum": [F5_wr_dict[blue_team][0]]}
         new_df = pd.DataFrame(row_data)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
         # add game_df to game_df_list
         game_df_list.append(game_df)
+        
+        # reset the momentum for the next game
+        F5_wr_dict[blue_team][0] = 0
+        F5_wr_dict[red_team][0] = 0
 
     return output_df
 
