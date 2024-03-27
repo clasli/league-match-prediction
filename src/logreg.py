@@ -30,6 +30,9 @@ def predict(w, X):
     return np.where(signs == -1, 0, signs)
 
 def train(X_train, y_train, lr=1e-1, num_iters=5000, l2_reg=0.0):
+    print("LR is: ", lr)
+    print("Num iters is: ", num_iters)
+    print("L2 reg is: ", l2_reg)
     """Train linear regression using gradient descent.
 
     Args:
@@ -62,12 +65,13 @@ def evaluate(w, X, y, name):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--learning-rate', '-r', type=float, default=2)
-    parser.add_argument('--num-iters', '-T', type=int, default=10000)
+    parser.add_argument('--learning-rate', '-r', type=float, default=0.1)
+    parser.add_argument('--num-iters', '-T', type=int, default=5000)
     parser.add_argument('--l2', type=float, default=0.0)
     parser.add_argument('--l1', type=float, default=0.0)
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--plot-weights')
+    parser.add_argument('--sweep', action='store_true')
     return parser.parse_args()
 
 def read_data(input_df):
@@ -101,14 +105,48 @@ def main():
     # X_test = all_data['X_test']
     # y_test = all_data['y_test']
 
-    # Train with gradient descent
-    w = train(X_train, y_train, lr=OPTS.learning_rate, num_iters=OPTS.num_iters, l2_reg=OPTS.l2)
+    # SWEEP THROUGH POSSIBLE HYPERPARAMETERS, remember the current best settings
+    if OPTS.sweep:
+        best_dev_acc = 0
+        best_lr = 0
+        best_l2 = 0
+        best_iter = 0
+        for lr in [0.1, 0.2, 0.5, 1, 2]: # Learning rate
+            for l2 in [0.0, 0.1, 0.5]: # L2 regularization
+                for iter in [1000, 5000, 10000]: # Number of iterations
+                    print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
+                    # Train with gradient descent
+                    w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)
 
-    # Evaluate model
-    train_acc = evaluate(w, X_train, y_train, 'Train')
-    dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
-    if OPTS.test:
-        test_acc = evaluate(w, X_test, y_test, 'Test')
+                    # Evaluate model
+                    train_acc = evaluate(w, X_train, y_train, 'Train')
+                    dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
+                    if dev_acc > best_dev_acc:
+                        best_dev_acc = dev_acc
+                        best_lr = lr
+                        best_l2 = l2
+                        best_iter = iter
+                        best_w = w
+                    if OPTS.test:
+                        test_acc = evaluate(w, X_test, y_test, 'Test')
+
+        print(f"Best Dev Accuracy: {best_dev_acc}")
+        print(f"Best LR: {best_lr}")
+        print(f"Best L2: {best_l2}")
+        print(f"Best Iter: {best_iter}")
+        print(f"Best Weights: {best_w}")
+    else:
+        print(f"LR: {OPTS.learning_rate}, L2: {OPTS.l2}, Iter: {OPTS.num_iters}")
+        # Train with gradient descent
+        w = train(X_train, y_train, lr=OPTS.learning_rate, num_iters=OPTS.num_iters, l2_reg=OPTS.l2)
+        print(w)
+
+        # Evaluate model
+        train_acc = evaluate(w, X_train, y_train, 'Train')
+        dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
+        if OPTS.test:
+            test_acc = evaluate(w, X_test, y_test, 'Test')
+
 
     # # Plot the weights
     # if OPTS.plot_weights:
