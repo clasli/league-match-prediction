@@ -8,7 +8,10 @@ import sys
 def initialize_team_code_dict():
     team_code_dict = {}
     team_code_dict['BRION'] = 'BRION'
+    team_code_dict['Fredit BRION'] = 'BRION'
+    team_code_dict['OKSavingsBank BRION'] = 'BRION'
     team_code_dict['Dplus KIA'] = 'DK'
+    team_code_dict['DWG KIA'] = 'DK'
     team_code_dict['DRX'] = 'DRX'
     team_code_dict['Gen.G'] = 'GEN'
     team_code_dict['Hanwha Life Esports'] = 'HLE'
@@ -17,7 +20,6 @@ def initialize_team_code_dict():
     team_code_dict['Liiv SANDBOX'] = 'LSB'
     team_code_dict['FearX'] = 'LSB'
     team_code_dict['Nongshim RedForce'] = 'NS'
-    team_code_dict['OKSavingsBank BRION'] = 'BRION'
     team_code_dict['T1'] = 'T1'
     return team_code_dict
 
@@ -111,151 +113,6 @@ def export_df_to_csv(df, filename):
 """
 # implements the above explanation of feature
 def create_F1_standardized_win_score(general_input_df, team_code_dict):
-
-    # create the headers for the output dataframe
-    unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
-    combined_headers = ['gameid', 'game', 'blue_team', 'red_team', 'result'] + unique_team_codes
-
-    # create the output dataframe
-    output_df = pd.DataFrame(columns=combined_headers)
-
-    # create dict data structure to store in-progress total games, wins, and losses for each team, using team_code_dict values (each team code should have 3 vals)
-    # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
-    F1_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
-
-    # grab all the unique gameids f rom input_df
-    gameids = general_input_df['gameid'].unique()
-
-    for gameid in gameids: # iterate through all unique game_ids
-        
-        # get all rows with the same gameid
-        game_df = general_input_df[general_input_df['gameid'] == gameid] 
-
-        # # skip this gameid if this is NOT a spring split game
-        # if game_df['split'].iloc[0] != 'Spring':
-        #     continue
-
-        # # skip this gameid if this is NOT a regular season game
-        # if game_df['playoffs'].iloc[0] == 1:
-        #     continue
-
-        # determine which game it is (1 or 2)
-        game = "game_" + str(game_df['game'].iloc[0])
-
-        # in game_df, find teamname and determine team code from team_code_dict
-        blue_team = team_code_dict[game_df['teamname'].iloc[0]]
-        red_team = team_code_dict[game_df['teamname'].iloc[1]]
-
-        # determine which team won the game (check boolean result column, and output the team code (from team_code_dict) using winning team name)
-        if bool(game_df['result'].iloc[0]) == 1:
-            result = team_code_dict[game_df['teamname'].iloc[0]]
-            # print(result + " won" + " gameid: " + str(gameid))
-        elif bool(game_df['result'].iloc[1]) == 1:
-            result = team_code_dict[game_df['teamname'].iloc[1]]
-            # print(result + " won" + " gameid: " + str(gameid))
-
-        # store the match data in a list
-        match_data = [gameid, game, blue_team, red_team, result]
-            
-        # Calculate the team Weighted Win Percentage (WWP)
-        # Formula: Weighted Win Percentage (WWP) = TWP (Team Win Percentage) * SOS (Strength of Schedule)
-        epsilon = 1e-6
-        dec_pts = 4
-
-        # TWP Updates to Total Games, Wins, Losses
-        # update total games played
-        F1_wr_dict[blue_team][0] += 1
-        F1_wr_dict[red_team][0] += 1
-
-        # F1_wr_dict[team_code][0] >= 1 symbolizes that a team has played at least one game... loop + determine how many teams have played at least one game and store into "effective_teams"
-        effective_teams = len([team_code for team_code in unique_team_codes if F1_wr_dict[team_code][0] >= 1])
-        
-        if effective_teams > 10:
-            print("Error: More than 10 teams have played at least one game")
-            sys.exit()
-
-        # (if) update blue team win, red team loss
-        if result == blue_team: 
-            F1_wr_dict[blue_team][1] += 1
-            F1_wr_dict[red_team][2] += 1
-
-        # (elif) update red team win, blue team loss
-        elif result == red_team: 
-            F1_wr_dict[red_team][1] += 1
-            F1_wr_dict[blue_team][2] += 1
-
-        # TWP Calculation  
-        twp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        
-        team_num = 0
-        for team_code in unique_team_codes:
-            if F1_wr_dict[team_code][0] == 0: # edge case where team has not played any games yet
-                twp[team_num] = 0
-            else: # if a team has played at minimum 1 game
-                twp[team_num] = round(F1_wr_dict[team_code][1] / F1_wr_dict[team_code][0], dec_pts) # calculate (wins/total_games) # ROUND
-            team_num += 1
-
-        # print("twp: ", twp) # debug
-
-        # SOS Calculation - Average Opponent TWP (to date)
-        sos = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        team_num = 0
-        for team_code in unique_team_codes:
-            sos[team_num] = round((sum(twp) - twp[team_num]) / (effective_teams - 1), dec_pts) # can calculate even if the team has not played yet # ROUND
-            team_num += 1
-
-        # print("sos: ", sos) # debug
-                        
-        # WWP Calculation
-        wwp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        team_num = 0
-        for team_code in unique_team_codes:
-            # if total games for a team is 0, then os_twp = win_percentage * strength_of_schedule / (total_games + epsilon)
-            if F1_wr_dict[team_code][0] == 0:
-                WWP = twp[team_num] * sos[team_num] / (F1_wr_dict[team_code][0] + epsilon)
-                wwp[team_num] = round(WWP, dec_pts)
-            else:
-                WWP = twp[team_num] * sos[team_num]
-                wwp[team_num] = round(WWP, dec_pts)
-
-            team_num += 1
-
-        # print("wwp: ", wwp) # debug
-        
-        # Standardized WWP Calculation
-        standardized_wwp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        WWP_mean = statistics.mean(wwp)
-        # print("WWP Mean: " + str(WWP_mean)) # debug
-        WWP_std = statistics.stdev(wwp)
-        team_num = 0
-        for team_code in unique_team_codes:
-            if (WWP_std == 0):
-                standardized_wwp[team_num] = 0
-            else: 
-                standardized_wwp[team_num] = round((wwp[team_num] - WWP_mean) / (WWP_std), dec_pts)
-            team_num += 1
-
-        # print("standardized_wwp: ", standardized_wwp, "\n") # debug
-
-        # DEBUG: create new dictionary mapping team code to twp, sort and print by descending twp
-        # twp_dict = {team_code: twp[i] for i, team_code in enumerate(unique_team_codes)}
-        # sorted_twp = sorted(twp_dict.items(), key=lambda x: x[1], reverse=True)
-        # print("sorted twp: ", sorted_twp)
-
-        # DEBUG: create new dictionary mapping team code to standardized_wwp, sort and print by descending
-        # standardized_wwp_dict = {team_code: standardized_wwp[i] for i, team_code in enumerate(unique_team_codes)}
-        # sorted_standardized_wwp = sorted(standardized_wwp_dict.items(), key=lambda x: x[1], reverse=True)
-        # print("sorted standardized_wwp: ", sorted_standardized_wwp)
-
-        # add the row_data list to the output dataframe
-        row_data = [x for x in match_data] + [y for y in standardized_wwp]
-        new_df = pd.DataFrame([row_data], columns=combined_headers)
-        output_df = pd.concat([output_df, new_df], ignore_index=True)
-
-    return output_df
-
-
-def create_F1_modified(general_input_df, team_code_dict):
 
     # create the headers for the output dataframe
     unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
@@ -671,7 +528,7 @@ if __name__ == '__main__':
     output_filename = "../data/2023/2023_LCK_LogReg_Dataset.csv"
 
     # add feature data to output df
-    F1_output_df = create_F1_modified(general_input_df, team_code_dict)
+    F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)
 
     # F2 result (per region champion wr)
     F2_output_df = create_F2_region_champ_wr(individual_input_df)

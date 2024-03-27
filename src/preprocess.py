@@ -1,8 +1,5 @@
 import pandas as pd
 
-match_data_2024_file = '../data/2024/2024_LoL_esports_match_data_from_OraclesElixir.csv'
-match_data_2023_file = '../data/2023/2023_Lol_esports_match_data_from_OraclesElixir.csv'
-
 def create_df(filename):
     df = pd.read_csv(filename)
     return df
@@ -32,9 +29,17 @@ def extract_individual_stats(df):
     return df_team
 
 if __name__ == "__main__":
+    match_data_2022_file = '../data/2022/2022_LoL_esports_match_data_from_OraclesElixir.csv'
+    match_data_2023_file = '../data/2023/2023_Lol_esports_match_data_from_OraclesElixir.csv'
+    match_data_2024_file = '../data/2024/2024_LoL_esports_match_data_from_OraclesElixir.csv'
+
+
     df_2023 = create_df(match_data_2023_file)
-    # df_2024 = create_df(match_data_2024_file)
-    # df_2023 = pd.concat([df_2023, df_2024], ignore_index=True)
+
+    df_2022 = create_df(match_data_2022_file)
+    df_2024 = create_df(match_data_2024_file)
+    df_2023 = pd.concat([df_2022, df_2023], ignore_index=True)
+    df_2023 = pd.concat([df_2023, df_2024], ignore_index=True)
 
     df_2023_lck = create_league_df(df_2023,'LCK')
 
