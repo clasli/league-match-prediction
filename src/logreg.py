@@ -69,7 +69,7 @@ def evaluate(w, X, y, name):
     if gameids and gamenum:
         for i, (pred, y) in enumerate(zip(y_preds, y)):
             if pred != y:
-                print("[{}] {}".format(gamenum[i], gameids[i]))
+                print("[{}] {} Incorrect: {}".format(gamenum[i], gameids[i], pred))
                 c += 1
     print(str(c) + " of " + str(total) +" incorrect")
 
@@ -95,8 +95,8 @@ def read_data(df):
     
     # Define features (X) and target (y)
     global gameids, gamenum
-    gameids = df['gameid'].tolist()
-    gamenum = df['momentum'].tolist()
+    # gameids = df['gameid'].tolist()
+    # gamenum = df['momentum'].tolist()
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
@@ -129,8 +129,8 @@ def main():
         best_l2 = 0
         best_iter = 0
         for lr in [0.1, 0.2, 0.5, 1, 2]: # Learning rate
-            for l2 in [0.0, 0.1, 0.5]: # L2 regularization
-                for iter in [1000, 5000, 10000]: # Number of iterations
+            for l2 in [0.0, 0.1, 0.5, 1.0, 2.0, 5.0]: # L2 regularization
+                for iter in [1000, 5000, 7500]: # Number of iterations
                     print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
                     # Train with gradient descent
                     w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)

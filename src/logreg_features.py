@@ -554,7 +554,6 @@ def create_F5_team_momentum(input_df):
 
         # start of new split
         if split != curr_split:
-            region_champ_wr = {}
             curr_split = split
 
         # get the "game" of the game_df
@@ -579,7 +578,11 @@ def create_F5_team_momentum(input_df):
                 if (prev_game_df['game'].iloc[0]) != (game - 1):
                     raise Exception('Improperly formed csv. Game {} does not have a previous game.'.format(gameid))
 
-            prev_game_result = prev_game_df['result'].iloc[0]
+            if team_code_dict[prev_game_df['teamname'].iloc[0]] == blue_team:
+                prev_game_result = prev_game_df['result'].iloc[0]
+            else:
+                prev_game_result = prev_game_df['result'].iloc[1]
+
             if prev_game_result == 1:
                 F5_wr_dict[blue_team][0] = 0.5
                 F5_wr_dict[red_team][0] = -0.5
@@ -591,8 +594,17 @@ def create_F5_team_momentum(input_df):
             # get the result of the last two games
             prev_game_df = game_df_list[-1]
             prev_game_2_df = game_df_list[-2]
-            prev_game_result = prev_game_df['result'].iloc[0]
-            prev_game_2_result = prev_game_2_df['result'].iloc[0]
+
+            if team_code_dict[prev_game_df['teamname'].iloc[0]] == blue_team:
+                prev_game_result = prev_game_df['result'].iloc[0]
+            else:
+                prev_game_result = prev_game_df['result'].iloc[1]
+
+            if team_code_dict[prev_game_2_df['teamname'].iloc[0]] == blue_team:
+                prev_game_2_result = prev_game_2_df['result'].iloc[0]
+            else:
+                prev_game_2_result = prev_game_2_df['result'].iloc[1]
+
             if prev_game_result == 1 and prev_game_2_result == 1:
                 F5_wr_dict[blue_team][0] = 1
                 F5_wr_dict[red_team][0] = -1
@@ -601,6 +613,9 @@ def create_F5_team_momentum(input_df):
                 F5_wr_dict[red_team][0] = 1
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
+
+            # if gameid == "ESPORTSTMNT02_2673605":
+            #     print("Team: {}, {} and {}".format(blue_team, prev_game_result, prev_game_2_result))
 
 
         # add new row to the output dataframe

@@ -47,3 +47,4 @@ Both
 # linear model ... maybe there is a non-linear relationship
 # time-impacted features ?? does time play a factor
 # seperate winrate by split (f1)
+# blue side red side strength? and how it changes the impact of champ wr?
