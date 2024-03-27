@@ -21,6 +21,8 @@ Later Features
 - earned gpm difference (time modified)
 - kill difference (red + blue team)
 - how long does it take Team X to close the game against Team Y
+(8) Momentum
+- if A smashes B in game 1 (gold, kills, stats), then more likely to win game 2? 
 
 - - - - - 
 Silas
