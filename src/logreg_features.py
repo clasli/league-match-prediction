@@ -600,7 +600,7 @@ if __name__ == '__main__':
     all_regions_input_df = create_df(filename) 
     
     # specify output df and csv
-    output_filename = "../data/2023/2023_LCK_LogReg_Dataset.csv"
+    output_filename = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
 
     # add feature data to output df
     F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)
@@ -612,7 +612,7 @@ if __name__ == '__main__':
     F3_output_df = create_F3_player_champ_wr(individual_input_df)
 
     # F4 result (per patch champion wr)
-    F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
+    # F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
 
     # F5 result (team momentum)
     F5_output_df = create_F5_team_momentum(general_input_df)
@@ -622,7 +622,7 @@ if __name__ == '__main__':
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
     output_df = pd.concat([output_df, F3_output_df], axis=1)
-    output_df = pd.concat([output_df, F4_output_df], axis=1)
+    # output_df = pd.concat([output_df, F4_output_df], axis=1)
     output_df = pd.concat([output_df, F5_output_df], axis=1)
 
     # export output df as csv
