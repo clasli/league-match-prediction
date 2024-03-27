@@ -510,6 +510,81 @@ def create_F4_patch_champ_wr(input_df, one_region_input_df):
 
     return output_df
 
+def create_F5_team_momentum(input_df):
+    '''
+    Feature 5: Team Momentum (Indicator Features)
+
+    Momentum is related to "if a team won a previous game, how does that affect current game"
+    Momentum 0 indicates that the team has no past results in a series
+    Momentum 1 indicates that the team WON/LOSS their previous game
+    Momentum 2 indicates that the team WON/LOSS their (2) previous games
+    Positive Momentum indicates that Blue Team has momentum
+    Negative Momentum indicates that Red Team has momentum
+
+    Things to consider:
+        - does a team perform better with no past results in a series? 
+        - does a team perform better if they win a game? 
+        - does a team perform worse if they lose 2 games in a row? are they not likely to win? 
+    '''
+
+    # create a new df
+    momentum_headers = ["momentum"]
+    output_df = pd.DataFrame(columns=momentum_headers)
+
+    # grab all the unique gameids from input_df
+    gameids = input_df['gameid'].unique()
+
+    # keep track of current split
+    curr_split = ""
+
+    for gameid in gameids: # iterate through all unique game_ids
+        
+        # get all rows with the same gameid
+        game_df = input_df[input_df['gameid'] == gameid] 
+
+        # get current split
+        split = game_df['split'].iloc[0]
+
+        # start of new split
+        if split != curr_split:
+            region_champ_wr = {}
+            curr_split = split
+
+        # get the "game" of the game_df
+        game = game_df['game'].iloc[0]
+
+        # if game is the first game of the series, then momentum is 0
+        if game == 1:
+            momentum = 0
+
+        if game >= 2:
+            # get the result of the previous game
+            prev_game = game_df['result'].iloc[0]
+            if prev_game == 1:
+                momentum = 0.5
+            else:
+                momentum = -0.5
+        
+        if game >= 3:
+            # get the result of the last two games
+            prev_game = game_df['result'].iloc[0]
+            prev_prev_game = game_df['result'].iloc[1]
+            if prev_game == 1 and prev_prev_game == 1:
+                momentum = 1
+            elif prev_game == 0 and prev_prev_game == 0:
+                momentum = -1
+            else:
+                pass # nothing happens, as momentum is already set to 1 or -1
+
+
+        # add new row to the output dataframe
+        row_data = {"momentum": [momentum]}
+        new_df = pd.DataFrame(row_data)
+        output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+    return output_df
+
+
 if __name__ == '__main__':
     # init all the team codes for each team name
     team_code_dict = initialize_team_code_dict()
@@ -539,19 +614,19 @@ if __name__ == '__main__':
     # F4 result (per patch champion wr)
     F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
 
+    # F5 result (team momentum)
+    F5_output_df = create_F5_team_momentum(general_input_df)
+
     # Adding features to the desired final df 
     output_df = pd.DataFrame()
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
     output_df = pd.concat([output_df, F3_output_df], axis=1)
     output_df = pd.concat([output_df, F4_output_df], axis=1)
+    output_df = pd.concat([output_df, F5_output_df], axis=1)
 
     # export output df as csv
     export_df_to_csv(output_df, output_filename)
-
-    # note that "BRION" and "OKSavingsBank BRION" are the same team, should replace to "BRION" for consistency
-    # team_list = [team.replace('OKSavingsBank BRION', 'BRION') for team in team_list]
-
 
 
 ## INIT ##

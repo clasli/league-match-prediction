@@ -26,6 +26,7 @@ def predict(w, X):
         - Predicted classes as a numpy vector of size (M,). Each entry should be either -1 or +1.
     """
     signs = np.sign(X.dot(w.T))
+    print(w)
     return np.where(signs == -1, 0, signs)
 
 def train(X_train, y_train, lr=1e-1, num_iters=5000, l2_reg=0.0):
