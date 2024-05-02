@@ -69,7 +69,7 @@ def evaluate(w, X, y, name):
     if gameids and gamenum:
         for i, (pred, y) in enumerate(zip(y_preds, y)):
             if pred != y:
-                print("[{}] {} Incorrect: {}".format(gamenum[i], gameids[i], pred))
+                # print("[{}] {} Incorrect: {}".format(gamenum[i], gameids[i], pred))
                 c += 1
     print(str(c) + " of " + str(total) +" incorrect")
 
@@ -95,15 +95,15 @@ def read_data(df):
     
     # Define features (X) and target (y)
     global gameids, gamenum
-    # gameids = df['gameid'].tolist()
-    # gamenum = df['momentum'].tolist()
+    gameids = df['gameid'].tolist()
+    gamenum = df['momentum'].tolist()
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
     
     # Split the data into train, test, and dev sets (70/10/20 split)
-    X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.3, random_state=42)
-    X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, random_state=42)
+    X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.3, shuffle=False)
+    X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, shuffle=False)
 
 
     return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
@@ -128,24 +128,26 @@ def main():
         best_lr = 0
         best_l2 = 0
         best_iter = 0
-        for lr in [0.1, 0.2, 0.5, 1, 2]: # Learning rate
-            for l2 in [0.0, 0.1, 0.5, 1.0, 2.0, 5.0]: # L2 regularization
-                for iter in [1000, 5000, 7500]: # Number of iterations
-                    print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
-                    # Train with gradient descent
-                    w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)
+        lr = 0.1
+        iter = 5000
+        # for lr in [0.1, 0.2, 0.5, 1, 2]: # Learning rate
+        for l2 in [0.0, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0]: # L2 regularization
+            # for iter in [1000, 5000, 7500]: # Number of iterations
+            print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
+            # Train with gradient descent
+            w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)
 
-                    # Evaluate model
-                    train_acc = evaluate(w, X_train, y_train, 'Train')
-                    dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
-                    if dev_acc > best_dev_acc:
-                        best_dev_acc = dev_acc
-                        best_lr = lr
-                        best_l2 = l2
-                        best_iter = iter
-                        best_w = w
-                    if OPTS.test:
-                        test_acc = evaluate(w, X_test, y_test, 'Test')
+            # Evaluate model
+            train_acc = evaluate(w, X_train, y_train, 'Train')
+            dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
+            if dev_acc > best_dev_acc:
+                best_dev_acc = dev_acc
+                best_lr = lr
+                best_l2 = l2
+                best_iter = iter
+                best_w = w
+            if OPTS.test:
+                test_acc = evaluate(w, X_test, y_test, 'Test')
 
         print(f"Best Dev Accuracy: {best_dev_acc}")
         print(f"Best LR: {best_lr}")

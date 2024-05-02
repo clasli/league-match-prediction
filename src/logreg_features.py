@@ -390,20 +390,20 @@ def create_F3_player_champ_wr(input_df):
             if b_player not in player_champ_wr: 
                 player_champ_wr[b_player] = {}
                 player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
-                b_wr = 0.5
+                b_wr = 0.0
             elif b_champ not in player_champ_wr[b_player]:
                 player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
-                b_wr = 0.5
+                b_wr = 0.0
             else:
                 b_wr = player_champ_wr[b_player][b_champ]['wins'] / player_champ_wr[b_player][b_champ]['games']
             
             if r_player not in player_champ_wr: 
                 player_champ_wr[r_player] = {}
                 player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
-                r_wr = 0.5
+                r_wr = 0.0
             elif r_champ not in player_champ_wr[r_player]:
                 player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
-                r_wr = 0.5
+                r_wr = 0.0
             else:
                 r_wr = player_champ_wr[r_player][r_champ]['wins'] / player_champ_wr[r_player][r_champ]['games']
             
@@ -584,11 +584,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_result = prev_game_df['result'].iloc[1]
 
             if prev_game_result == 1:
-                F5_wr_dict[blue_team][0] = 0.5
-                F5_wr_dict[red_team][0] = -0.5
+                F5_wr_dict[blue_team][0] = 5
+                F5_wr_dict[red_team][0] = -5
             else:
-                F5_wr_dict[blue_team][0] = -0.5
-                F5_wr_dict[red_team][0] = 0.5
+                F5_wr_dict[blue_team][0] = -5
+                F5_wr_dict[red_team][0] = 5
         
         if game >= 3:
             # get the result of the last two games
@@ -606,11 +606,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_2_result = prev_game_2_df['result'].iloc[1]
 
             if prev_game_result == 1 and prev_game_2_result == 1:
-                F5_wr_dict[blue_team][0] = 1
-                F5_wr_dict[red_team][0] = -1
+                F5_wr_dict[blue_team][0] = 10
+                F5_wr_dict[red_team][0] = -10
             elif prev_game_result == 0 and prev_game_2_result == 0:
-                F5_wr_dict[blue_team][0] = -1
-                F5_wr_dict[red_team][0] = 1
+                F5_wr_dict[blue_team][0] = -10
+                F5_wr_dict[red_team][0] = 10
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
 
