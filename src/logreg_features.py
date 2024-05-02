@@ -638,8 +638,8 @@ def create_F5_team_momentum(input_df):
         game_df_list.append(game_df)
         
         # reset the momentum for the next game
-        F5_wr_dict[blue_team][0] = 0
-        F5_wr_dict[red_team][0] = 0
+        F5_wr_dict[blue_team] = 0
+        F5_wr_dict[red_team] = 0
 
     return output_df
 
