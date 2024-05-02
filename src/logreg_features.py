@@ -567,8 +567,8 @@ def create_F5_team_momentum(input_df):
         red_team = team_code_dict[game_df['teamname'].iloc[1]]        
 
         # if game is the first game of the series, then momentum is 0
-        F5_wr_dict[blue_team] = 0  # start by momentum being 0 because will modify it later
-        F5_wr_dict[red_team] = 0 
+        F5_wr_dict[blue_team] = 0.5  # start by momentum being 0 because will modify it later
+        F5_wr_dict[red_team] = 0.5 
 
         if game >= 2:
             # get the result of the previous game
@@ -587,11 +587,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_result = prev_game_df['result'].iloc[1]
 
             if prev_game_result == 1:
-                F5_wr_dict[blue_team] = 5
-                F5_wr_dict[red_team] = -5
+                F5_wr_dict[blue_team] = 0.75
+                F5_wr_dict[red_team] = 0.25 
             else:
-                F5_wr_dict[blue_team] = -5
-                F5_wr_dict[red_team] = 5
+                F5_wr_dict[blue_team] = 0.25
+                F5_wr_dict[red_team] = 0.75
         
         if game >= 3:
             # get the result of the last two games
@@ -609,11 +609,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_2_result = prev_game_2_df['result'].iloc[1]
 
             if prev_game_result == 1 and prev_game_2_result == 1:
-                F5_wr_dict[blue_team] = 10
-                F5_wr_dict[red_team] = -10
+                F5_wr_dict[blue_team] = 1
+                F5_wr_dict[red_team] = 0 # -0.10
             elif prev_game_result == 0 and prev_game_2_result == 0:
-                F5_wr_dict[blue_team] = -10
-                F5_wr_dict[red_team] = 10
+                F5_wr_dict[blue_team] = 0 # -0.10
+                F5_wr_dict[red_team] = 1
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
         

@@ -64,14 +64,14 @@ def evaluate(w, X, y, name):
     y_preds = predict(w, X)
     acc = np.mean(y_preds == y)
 
-    c = 0
-    total = len(y)
-    if gameids and gamenum:
-        for i, (pred, y) in enumerate(zip(y_preds, y)):
-            if pred != y:
-                # print("[{}] {} Incorrect: {}".format(gamenum[i], gameids[i], pred))
-                c += 1
-    print(str(c) + " of " + str(total) +" incorrect")
+    # c = 0
+    # total = len(y)
+    # if gameids and gamenum:
+    #     for i, (pred, y) in enumerate(zip(y_preds, y)):
+    #         if pred != y:
+    #             # print("[{}] {} Incorrect: {}".format(gamenum[i], gameids[i], pred))
+    #             c += 1
+    # print(str(c) + " of " + str(total) +" incorrect")
 
     print('    {} Accuracy: {}'.format(name, acc))
     return acc
@@ -94,9 +94,9 @@ def read_data(df):
 
     
     # Define features (X) and target (y)
-    global gameids, gamenum
+    # global gameids, gamenum
     gameids = df['gameid'].tolist()
-    gamenum = df['momentum'].tolist()
+    # gamenum = df['momentum'].tolist()
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
