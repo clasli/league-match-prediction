@@ -528,13 +528,14 @@ def create_F5_team_momentum(input_df):
     '''
 
     # create a new df
-    momentum_headers = ["momentum"]
+    momentum_headers = ["blue_momentum", "red_momentum"]
     output_df = pd.DataFrame(columns=momentum_headers)    
 
     # create dict data structure to store in-progress total games, wins, and losses for each team, using team_code_dict values (each team code should have 3 vals)
     # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
     unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
-    F5_wr_dict = {team_code: [0, 0, 0] for team_code in unique_team_codes}
+    # for every team_code in unique_team_codes, add a key to F5_wr_dict
+    F5_wr_dict = {team_code: [0] for team_code in unique_team_codes}
 
     gameids = input_df['gameid'].unique()
 
@@ -545,6 +546,8 @@ def create_F5_team_momentum(input_df):
     game_df_list = []
 
     for gameid in gameids: # iterate through all unique game_ids
+
+        momentum_data = []
         
         # get all rows with the same gameid
         game_df = input_df[input_df['gameid'] == gameid] 
@@ -564,8 +567,8 @@ def create_F5_team_momentum(input_df):
         red_team = team_code_dict[game_df['teamname'].iloc[1]]        
 
         # if game is the first game of the series, then momentum is 0
-        F5_wr_dict[blue_team][0] = 0  # start by momentum being 0 because will modify it later
-        F5_wr_dict[red_team][0] = 0 
+        F5_wr_dict[blue_team] = 0  # start by momentum being 0 because will modify it later
+        F5_wr_dict[red_team] = 0 
 
         if game >= 2:
             # get the result of the previous game
@@ -584,11 +587,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_result = prev_game_df['result'].iloc[1]
 
             if prev_game_result == 1:
-                F5_wr_dict[blue_team][0] = 5
-                F5_wr_dict[red_team][0] = -5
+                F5_wr_dict[blue_team] = 5
+                F5_wr_dict[red_team] = -5
             else:
-                F5_wr_dict[blue_team][0] = -5
-                F5_wr_dict[red_team][0] = 5
+                F5_wr_dict[blue_team] = -5
+                F5_wr_dict[red_team] = 5
         
         if game >= 3:
             # get the result of the last two games
@@ -606,21 +609,29 @@ def create_F5_team_momentum(input_df):
                 prev_game_2_result = prev_game_2_df['result'].iloc[1]
 
             if prev_game_result == 1 and prev_game_2_result == 1:
-                F5_wr_dict[blue_team][0] = 10
-                F5_wr_dict[red_team][0] = -10
+                F5_wr_dict[blue_team] = 10
+                F5_wr_dict[red_team] = -10
             elif prev_game_result == 0 and prev_game_2_result == 0:
-                F5_wr_dict[blue_team][0] = -10
-                F5_wr_dict[red_team][0] = 10
+                F5_wr_dict[blue_team] = -10
+                F5_wr_dict[red_team] = 10
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
+        
+        momentum_data.append(F5_wr_dict[blue_team])
+        momentum_data.append(F5_wr_dict[red_team])
 
             # if gameid == "ESPORTSTMNT02_2673605":
             #     print("Team: {}, {} and {}".format(blue_team, prev_game_result, prev_game_2_result))
 
 
-        # add new row to the output dataframe
-        row_data = {"momentum": [F5_wr_dict[blue_team][0]]}
-        new_df = pd.DataFrame(row_data)
+        # add new row of single element to the output dataframe
+        # row_data = {"momentum": [F5_wr_dict[blue_team][0]]}
+        # new_df = pd.DataFrame(row_data)
+        # output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+        # add new row of multiple elements to the output dataframe
+        row_data = [y for y in momentum_data]
+        new_df = pd.DataFrame([row_data], columns=momentum_headers)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
         # add game_df to game_df_list
