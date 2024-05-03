@@ -1,5 +1,6 @@
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping
 
 import argparse
 import sys
@@ -67,14 +68,22 @@ def evaluate(model, X, y, name):
     print('    {} Accuracy: {}'.format(name, acc))
     return acc
 
+
+# Parse dataset
+input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
+input_df = pd.read_csv(input_csv, index_col=0)
+gameids, X_train, y_train, X_test, y_test = read_data(input_df)
+
+num_features = X_train.shape[1]
+
 # Define the DNN model
 model = Sequential([
     # Input layer
-    Dense(64, activation='relu', input_shape=(num_features,)),
+    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
     
     # Hidden layers
     Dense(128, activation='relu'),
-    Dropout(0.2),  # Optional dropout layer to prevent overfitting
+    Dropout(0.3),  # Optional dropout layer to prevent overfitting
     BatchNormalization(),  # Optional batch normalization layer
     
     Dense(64, activation='relu'),
@@ -88,12 +97,11 @@ model = Sequential([
 # Compile the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Fit model
-input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
-input_df = pd.read_csv(input_csv, index_col=0)
-gameids, X_train, y_train, X_test, y_test = read_data(input_df)
+# Define early stopping callback
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
-history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.2)
+# Train the model with early stopping
+history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
 train_acc = history.history['accuracy'][-1]
 dev_acc = history.history['val_accuracy'][-1]
 

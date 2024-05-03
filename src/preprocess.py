@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
 
     df_2023 = create_df(match_data_2023_file)
-    df_2021 = create_df(match_data_2021_file)
+    # df_2021 = create_df(match_data_2021_file)
     df_2022 = create_df(match_data_2022_file)
     df_2024 = create_df(match_data_2024_file)
     temp_df = pd.DataFrame()
 
-    temp_df = pd.concat([temp_df, df_2021], ignore_index=True)
+    # temp_df = pd.concat([temp_df, df_2021], ignore_index=True)
     temp_df = pd.concat([temp_df, df_2022], ignore_index=True)
     temp_df = pd.concat([temp_df, df_2023], ignore_index=True)
     df_2023 = pd.concat([temp_df, df_2024], ignore_index=True)

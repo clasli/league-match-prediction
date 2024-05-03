@@ -119,7 +119,7 @@ def read_data(df):
     y = df['result']
 
     # Initialize StratifiedShuffleSplit with desired parameters
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.3)
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
 
     # Split the data into train and combined test/dev sets
     for train_index, test_dev_index in sss.split(X, y):
@@ -127,7 +127,7 @@ def read_data(df):
         y_train, y_test_dev = y.iloc[train_index], y.iloc[test_dev_index]
 
     # Further split the combined test/dev set into development and test sets
-    sss_dev_test = StratifiedShuffleSplit(n_splits=1, test_size=0.66)
+    sss_dev_test = StratifiedShuffleSplit(n_splits=1, test_size=0.66, random_state=42)
     for dev_index, test_index in sss_dev_test.split(X_test_dev, y_test_dev):
         X_dev, X_test = X_test_dev.iloc[dev_index], X_test_dev.iloc[test_index]
         y_dev, y_test = y_test_dev.iloc[dev_index], y_test_dev.iloc[test_index]
