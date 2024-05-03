@@ -684,17 +684,17 @@ if __name__ == '__main__':
     team_code_dict = initialize_team_code_dict()
 
     # pull data from input csvs
-    filename = '../data/2023/2023_LCK_match_data_team.csv'
+    filename = '../data/output/LCK_match_data_team.csv'
     general_input_df = create_df(filename) 
 
-    filename = '../data/2023/2023_LCK_match_data_individual.csv'
+    filename = '../data/output/LCK_match_data_individual.csv'
     individual_input_df = create_df(filename) 
 
-    filename = '../data/2023/2023_ALL_match_data_individual.csv'
+    filename = '../data/output/ALL_match_data_individual.csv'
     all_regions_input_df = create_df(filename) 
     
     # specify output df and csv
-    output_filename = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
+    output_filename = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
 
     # add feature data to output df
     F1_output_df = create_F1_standardized_win_score(general_input_df, team_code_dict)

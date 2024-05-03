@@ -14,6 +14,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import pandas as pd
 
 num_features = 12
+test_size = 0.25
 
 def read_data(df):
     gameids = df['gameid'].tolist()
@@ -23,20 +24,20 @@ def read_data(df):
     y = df['result']
 
     # Initialize StratifiedShuffleSplit with desired parameters
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.3)
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=test_size)
 
     # Split the data into train and combined test/dev sets
-    for train_index, test_dev_index in sss.split(X, y):
-        X_train, X_test_dev = X.iloc[train_index], X.iloc[test_dev_index]
-        y_train, y_test_dev = y.iloc[train_index], y.iloc[test_dev_index]
+    for train_index, test_index in sss.split(X, y):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-    # Further split the combined test/dev set into development and test sets
-    sss_dev_test = StratifiedShuffleSplit(n_splits=1, test_size=0.66)
-    for dev_index, test_index in sss_dev_test.split(X_test_dev, y_test_dev):
-        X_dev, X_test = X_test_dev.iloc[dev_index], X_test_dev.iloc[test_index]
-        y_dev, y_test = y_test_dev.iloc[dev_index], y_test_dev.iloc[test_index]
+    # # Further split the combined test/dev set into development and test sets
+    # sss_dev_test = StratifiedShuffleSplit(n_splits=1, test_size=0.66)
+    # for dev_index, test_index in sss_dev_test.split(X_test_dev, y_test_dev):
+    #     X_dev, X_test = X_test_dev.iloc[dev_index], X_test_dev.iloc[test_index]
+    #     y_dev, y_test = y_test_dev.iloc[dev_index], y_test_dev.iloc[test_index]
 
-    return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
+    return gameids, X_train, y_train, X_test, y_test
 
 def predict(model, X):
     """Return the predictions using weight vector w on inputs X.
@@ -73,11 +74,11 @@ model = Sequential([
     
     # Hidden layers
     Dense(128, activation='relu'),
-    # Dropout(0.2),  # Optional dropout layer to prevent overfitting
+    Dropout(0.2),  # Optional dropout layer to prevent overfitting
     BatchNormalization(),  # Optional batch normalization layer
     
     Dense(64, activation='relu'),
-    # Dropout(0.2),  # Optional dropout layer to prevent overfitting
+    Dropout(0.2),  # Optional dropout layer to prevent overfitting
     BatchNormalization(),  # Optional batch normalization layer
     
     # Output layer
@@ -88,16 +89,18 @@ model = Sequential([
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Fit model
-input_csv = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
+input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
 input_df = pd.read_csv(input_csv, index_col=0)
-gameids, X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
+gameids, X_train, y_train, X_test, y_test = read_data(input_df)
 
-model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.2)
+train_acc = history.history['val_accuracy'][-1]
+dev_acc = history.history['accuracy'][-1]
 
 # Evaluate model
-train_acc = evaluate(model, X_train, y_train, 'Train')
-dev_acc = evaluate(model, X_dev, y_dev, 'Dev')
-train_acc = evaluate(model, X_test, y_test, 'Test')
+print('    Train Accuracy: {}'.format(train_acc))
+print('    Dev Accuracy: {}'.format(dev_acc))
+test_acc = evaluate(model, X_test, y_test, 'Test')
 
 
 # import torch
