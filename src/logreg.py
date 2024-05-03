@@ -110,6 +110,12 @@ def read_data(df):
     # return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
 
     # Drop unnecessary columns and define features (X) and labels (y)
+=======
+    # Define features (X) and target (y)
+    # global gameids, gamenum
+    gameids = df['gameid'].tolist()
+    # gamenum = df['momentum'].tolist()
+>>>>>>> f2d0b481263537855b481e562b8433f2ff5da06a
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
