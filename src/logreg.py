@@ -136,7 +136,7 @@ def read_data(df):
 
 def main():
     # Read the data
-    input_csv = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
+    input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
     input_df = pd.read_csv(input_csv, index_col=0)
     gameids, X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
 
