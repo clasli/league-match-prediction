@@ -1,6 +1,14 @@
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+# Description: Neural Network model for predicting match outcomes
 
+# Import TensorFlow
+import tensorflow as tf
+from tensorflow.keras.layers import Input, Dense, Dropout, BatchNormalization
+
+# Optimizers
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
+
+# Import other necessary libraries
 import argparse
 import sys
 from tqdm import tqdm
@@ -13,11 +21,136 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 import pandas as pd
 
-num_features = 12
+num_features = 12 # features
 test_size = 0.25 # test size 
 val_size = 0.2 # validation size
-# Data Split ... 
+dropout_rate = 0.4
+epoch_num_hyp = 20
+batch_size_hyp = 32
+batch_norm = True
+init_learning_rate = 0.001  # Example learning rate
+total_iters = 10
+weight_decay_hyp = 0.01
+loss_hyp = 'binary_crossentropy'
+optimizer = 'AdamW'
 
+class HyperParams:
+    def __init__(self, init_learning_rate, weight_decay, batch_size, epochs, dropout_rate, batch_norm, optimizer, loss_function, num_features, val_size, test_size):
+        self.init_learning_rate = init_learning_rate
+        self.weight_decay = weight_decay
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.dropout_rate = dropout_rate
+        self.batch_norm = batch_norm
+        self.optimizer_name = optimizer
+        self.optimizer = None
+        self.loss_function = loss_function
+        self.num_features = num_features
+        self.val_size = val_size
+        self.test_size = test_size
+
+        # Learning rate schedule for AdamW Optimizer
+        self.decay_steps = 10000
+        self.decay_rate = 0.95   
+
+    # getters
+    def get_init_learning_rate(self):
+        return self.init_learning_rate
+    
+    def get_weight_decay(self):
+        return self.weight_decay
+    
+    def get_batch_size(self):
+        return self.batch_size
+    
+    def get_epochs(self):
+        return self.epochs
+    
+    def get_dropout_rate(self):
+        return self.dropout_rate
+    
+    def get_batch_norm(self):
+        return self.batch_norm
+    
+    def get_optimizer_name(self):  
+        return self.optimizer_name
+    
+    def get_optimizer(self):
+        if self.optimizer_name == 'Adam':
+            self.optimizer = Adam(learning_rate=self.init_learning_rate)
+        elif self.optimizer_name == 'AdamW':
+            # Define learning rate schedule && AdamW optimizer
+            learning_rate_fn = ExponentialDecay(self.init_learning_rate, self.decay_steps, self.decay_rate, staircase=True )
+            optimizer = Adam(learning_rate=learning_rate_fn, beta_1=0.9, beta_2=0.999, epsilon=1e-07, weight_decay=self.weight_decay) # 
+            self.optimizer = optimizer
+        return self.optimizer
+    
+    def get_loss_function(self): 
+        return self.loss_function
+    
+    def get_num_features(self):
+        return self.num_features
+    
+    def get_val_size(self):
+        return self.val_size
+    
+    def get_test_size(self):
+        return self.test_size
+    
+    # Learning rate schedule for AdamW Optimizer
+    def get_decay_steps(self):
+        return self.decay_steps
+    
+    def get_decay_rate(self):
+        return self.decay_rate
+    
+    # Print hyperparameters
+    def print_hyperparameters(self):
+        print("HYPERPARAMETERS")
+        print(f" ... {1 - ((1 - self.test_size) * self.val_size)}-{(1 - self.test_size) * self.val_size}-{self.test_size} train-val-test split on {self.num_features} features")
+        print(f" ... Learning Rate: {self.init_learning_rate} | Weight Decay: {self.weight_decay}")
+        print(f" ... Batch Size: {self.batch_size} | Epochs: {self.epochs} | Batch Normalization: {self.batch_norm}")
+        print(f" ... Optimizer: {self.optimizer_name} | Loss Function: {self.loss_function} | Dropout Rate: {self.dropout_rate}")
+    
+    def return_hyperparameters(self):
+        output_msg = "HYPERPARAMETERS" + "\n" + f" ... {1 - ((1 - self.test_size) * self.val_size)}-{(1 - self.test_size) * self.val_size}-{self.test_size} train-val-test split on {self.num_features} features" + "\n" + f" ... Learning Rate: {self.init_learning_rate} | Weight Decay: {self.weight_decay}" + "\n" + f" ... Batch Size: {self.batch_size} | Epochs: {self.epochs} | Batch Normalization: {self.batch_norm}" + "\n" + f" ... Optimizer: {self.optimizer_name} | Loss Function: {self.loss_function} | Dropout Rate: {self.dropout_rate}"
+        return output_msg
+        
+class NeuralNetwork:
+    # Define the DNN model
+    def __init__(self, num_features, dropout_rate, batch_norm=True):
+        self.input_shape = (num_features,)
+        self.input_layer = Input(shape=self.input_shape)
+        self.hidden_layer1 = Dense(64, activation='relu')(self.input_layer)
+        self.hidden_layer2 = Dense(128, activation='relu')(self.hidden_layer1)
+        self.dropout_layer1 = Dropout(dropout_rate)(self.hidden_layer2)
+
+        if batch_norm:
+            self.batchnorm_layer1 = BatchNormalization()(self.dropout_layer1)
+            self.hidden_layer3 = Dense(64, activation='relu')(self.batchnorm_layer1)
+        else:
+            self.hidden_layer3 = Dense(64, activation='relu')(self.dropout_layer1)
+
+        self.dropout_layer2 = Dropout(dropout_rate)(self.hidden_layer3)
+
+        if batch_norm:
+            self.batchnorm_layer2 = BatchNormalization()(self.dropout_layer2)
+            self.output_layer = Dense(1, activation='sigmoid')(self.batchnorm_layer2)
+        else: 
+            self.output_layer = Dense(1, activation='sigmoid')(self.dropout_layer2)
+
+        self.model = tf.keras.Model(inputs=self.input_layer, outputs=self.output_layer)
+
+    def get_model(self):
+        return self.model
+    
+    def compile_model(self, optimizer, loss):
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+
+    def print_model_summary(self):
+        self.model.summary()
+
+# Data Split ... 
 def read_data(df):
     gameids = df['gameid'].tolist()
     # gamenum = df['momentum'].tolist()
@@ -69,110 +202,77 @@ def evaluate(model, X, y, name):
     print('    {} Accuracy: {}'.format(name, acc))
     return acc
 
-# Define the DNN model
-model = Sequential([
-    # Input layer
-    Dense(64, activation='relu', input_shape=(num_features,)),
-    
-    # Hidden layers
-    Dense(128, activation='relu'),
-    Dropout(0.2),  # Optional dropout layer to prevent overfitting
-    BatchNormalization(),  # Optional batch normalization layer
-    
-    Dense(64, activation='relu'),
-    Dropout(0.2),  # Optional dropout layer to prevent overfitting
-    BatchNormalization(),  # Optional batch normalization layer
-    
-    # Output layer
-    Dense(1, activation='sigmoid')  # 3 output neurons for multi-class classification
-])
+# Define Hyperparameters
+# | learning_rate | weight_decay | batch_size | epochs | dropout | batch_norm | optimizer | loss_function | num_features | val_size | test_size |
+params = HyperParams(init_learning_rate, 
+                     weight_decay_hyp, 
+                     batch_size_hyp, 
+                     epoch_num_hyp, 
+                     dropout_rate, 
+                     batch_norm, 
+                     optimizer, 
+                     loss_hyp, 
+                     num_features, 
+                     val_size, 
+                     test_size)
 
-# Compile the model
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Fit model
+print("Num Features: ", params.get_num_features())
+print("Dropout Rate: ", params.get_dropout_rate())
+print("Batch Norm: ", params.get_batch_norm())
+
+DNN = NeuralNetwork(params.get_num_features(), params.get_dropout_rate(), params.get_batch_norm())
+match_prediction_model = DNN.get_model()
+DNN.print_model_summary()
+
+DNN.compile_model(params.get_optimizer(), params.get_loss_function())
+
+# Fit match_prediction_model
 input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
 input_df = pd.read_csv(input_csv, index_col=0)
 gameids, X_train, y_train, X_test, y_test = read_data(input_df)
 
-history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=val_size) # validation size
-train_acc = history.history['accuracy'][-1]
-dev_acc = history.history['val_accuracy'][-1]
+print ("Training Data Shape: ", X_train.shape)
+print ("Testing Data Shape: ", X_test.shape)
 
-# Evaluate model
-print('    Train Accuracy: {}'.format(train_acc))
-print('    Dev Accuracy: {}'.format(dev_acc))
-test_acc = evaluate(model, X_test, y_test, 'Test')
+min_train_acc_set = [1, 1, 1]
+min_dev_acc_set = [1, 1, 1]
+min_test_acc_set = [1, 1, 1]
+max_train_acc_set = [0, 0, 0]
+max_dev_acc_set = [0, 0, 0]
+max_test_acc_set = [0, 0, 0]
 
-print("HYPERPARAMETERS")
-print("    Learning Rate: 0.001")
-print("    Batch Size: 32")
-print("    Epochs: 20")
-print("    Dropout: 0.2")
-print("    Batch Normalization: True")
-print("    Optimizer: Adam")
-print("    Loss Function: Binary Cross-Entropy")
-print("    Num-Features:", num_features)
-print("    Validation Size:", val_size)
-print("    Test Size:", test_size)
+for num_iters in range(total_iters): # ranges from 0 to total_iters-1
+    history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size()) # validation size
+    train_acc = history.history['accuracy'][-1]
+    dev_acc = history.history['val_accuracy'][-1]
 
+    # Evaluate match_prediction_model
+    print('    Train Accuracy: {}'.format(train_acc))
+    print('    Dev Accuracy: {}'.format(dev_acc))
+    test_acc = evaluate(match_prediction_model, X_test, y_test, 'Test')
 
-# import torch
-# import torch.nn as nn
-# import torch.optim as optim
-# import numpy as np
+    params.print_hyperparameters() # print hyperparameters
 
-# # Define the neural network architecture
-# class NeuralNetwork(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(NeuralNetwork, self).__init__()
-#         self.fc1 = nn.Linear(input_size, hidden_size)  # Input layer
-#         self.relu = nn.ReLU()  # ReLU activation function
-#         self.fc2 = nn.Linear(hidden_size, output_size)  # Output layer
+    if train_acc < min_train_acc_set[0]:
+        min_train_acc_set = [train_acc, dev_acc, test_acc]
+    if dev_acc < min_dev_acc_set[1]:
+        min_dev_acc_set = [train_acc, dev_acc, test_acc]
+    if test_acc < min_test_acc_set[2]:
+        min_test_acc_set = [train_acc, dev_acc, test_acc]
+    if train_acc > max_train_acc_set[0]:
+        max_train_acc_set = [train_acc, dev_acc, test_acc]
+    if dev_acc > max_dev_acc_set[1]:
+        max_dev_acc_set = [train_acc, dev_acc, test_acc]
+    if test_acc > max_test_acc_set[2]:
+        max_test_acc_set = [train_acc, dev_acc, test_acc]
 
-#     def forward(self, x):
-#         x = self.fc1(x)
-#         x = self.relu(x)
-#         x = self.fc2(x)
-#         return torch.sigmoid(x)  # Sigmoid activation function for binary classification
+print("MINIMUM ACCURACIES")
+print("    [TRAIN] *TRAIN*:", min_train_acc_set[0], "dev:", min_train_acc_set[1], "test:", min_train_acc_set[2])
+print("    [DEV] train:", min_dev_acc_set[0], "*DEV*:", min_dev_acc_set[1], "test:", min_dev_acc_set[2])
+print("    [TEST] train:", min_test_acc_set[0], "dev:", min_test_acc_set[1], "*TEST*:", min_test_acc_set[2])
 
-# # Define the hyperparameters
-# input_size = 17  # Number of input features
-# hidden_size = 64  # Number of neurons in the hidden layer
-# output_size = 1  # Number of output classes (binary classification)
-
-# # Instantiate the model
-# model = NeuralNetwork(input_size, hidden_size, output_size)
-
-# # Define the loss function and optimizer
-# criterion = nn.BCELoss()  # Binary cross-entropy loss function
-# optimizer = optim.Adam(model.parameters(), lr=0.001)  # Adam optimizer with learning rate 0.001
-
-# # Convert data to PyTorch tensors
-# X_train_tensor = torch.Tensor(X_train)
-# y_train_tensor = torch.Tensor(y_train.reshape(-1, 1))
-
-# # Train the model
-# num_epochs = 10
-# for epoch in range(num_epochs):
-#     # Forward pass
-#     outputs = model(X_train_tensor)
-#     loss = criterion(outputs, y_train_tensor)
-
-#     # Backward pass and optimization
-#     optimizer.zero_grad()
-#     loss.backward()
-#     optimizer.step()
-
-#     # Print loss for every epoch
-#     print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
-
-# # Convert test data to PyTorch tensors
-# X_test_tensor = torch.Tensor(X_test)
-
-# # Evaluate the model
-# with torch.no_grad():
-#     outputs = model(X_test_tensor)
-#     predicted = (outputs >= 0.5).float()
-#     accuracy = (predicted == y_test_tensor).sum().item() / len(y_test_tensor)
-#     print(f'Test Accuracy: {accuracy}')
+print("MAXIMUM ACCURACIES")
+print("    [TRAIN] *TRAIN*:", max_train_acc_set[0], "dev:", max_train_acc_set[1], "test:", max_train_acc_set[2])
+print("    [DEV] train:", max_dev_acc_set[0], "*DEV*:", max_dev_acc_set[1], "test:", max_dev_acc_set[2])
+print("    [TEST] train:", max_test_acc_set[0], "dev:", max_test_acc_set[1], "*TEST*:", max_test_acc_set[2])
