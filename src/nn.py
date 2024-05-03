@@ -94,8 +94,8 @@ input_df = pd.read_csv(input_csv, index_col=0)
 gameids, X_train, y_train, X_test, y_test = read_data(input_df)
 
 history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.2)
-train_acc = history.history['val_accuracy'][-1]
-dev_acc = history.history['accuracy'][-1]
+train_acc = history.history['accuracy'][-1]
+dev_acc = history.history['val_accuracy'][-1]
 
 # Evaluate model
 print('    Train Accuracy: {}'.format(train_acc))
