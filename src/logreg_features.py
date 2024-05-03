@@ -116,10 +116,11 @@ def create_F1_standardized_win_score(general_input_df, team_code_dict):
 
     # create the headers for the output dataframe
     unique_team_codes = list(set(get_list_team_code_dict(team_code_dict)))
-    combined_headers = ['gameid', 'result', 'blue_wr', 'red_wr']
+    combined_headers = ['gameid', 'result', 'blue_wr', 'blue_wr_rel']
+    combined_headers2 = ['gameid', 'result']
 
     # create the output dataframe
-    output_df = pd.DataFrame(columns=combined_headers)
+    output_df = pd.DataFrame(columns=combined_headers) # TODO: change headers
 
     # create dict data structure to store in-progress total games, wins, and losses for each team, using team_code_dict values (each team code should have 3 vals)
     # F1_wr_dict = {team_code: [total_games, total_wins, total_losses]}
@@ -253,9 +254,17 @@ def create_F1_standardized_win_score(general_input_df, team_code_dict):
         # add the row_data list to the output dataframe
         blue_idx = unique_team_codes.index(blue_team)
         red_idx = unique_team_codes.index(red_team)
-        row_data = [x for x in match_data] + [standardized_wwp[blue_idx], standardized_wwp[red_idx]]
+        row_data = [x for x in match_data] + [(standardized_wwp[blue_idx])/1.8, (standardized_wwp[blue_idx] - standardized_wwp[red_idx])/3]
+        row_data2 = [x for x in match_data] 
         new_df = pd.DataFrame([row_data], columns=combined_headers)
-        output_df = pd.concat([output_df, new_df], ignore_index=True)
+        new_df2 = pd.DataFrame([row_data2], columns=combined_headers2)
+        output_df = pd.concat([output_df, new_df], ignore_index=True) # TODO: fix new_df
+
+    
+    print(output_df['blue_wr'].min())
+    print(output_df['blue_wr'].max())
+    print(output_df['blue_wr_rel'].min())
+    print(output_df['blue_wr_rel'].max())
 
     return output_df
 
@@ -275,7 +284,9 @@ def create_F2_region_champ_wr(input_df):
 
     # create a new df
     champ_headers = ["region_top_wr", "region_jg_wr", "region_mid_wr", "region_adc_wr", "region_sup_wr"]
-    output_df = pd.DataFrame(columns=champ_headers)
+    champ_headers2 = ["region_top_wr", "region_top_wr_rel", "region_jg_wr", "region_jg_wr_rel", "region_mid_wr", \
+                     "region_mid_wr_rel", "region_adc_wr", "region_adc_wr_rel", "region_sup_wr", "region_sup_wr_rel"]
+    output_df = pd.DataFrame(columns=champ_headers2)
 
     # grab all the unique gameids from input_df
     gameids = input_df['gameid'].unique()
@@ -324,7 +335,8 @@ def create_F2_region_champ_wr(input_df):
             else: # only calculate wr if game is from desired region
                 r_wr = region_champ_wr[r_champ]['wins'] / region_champ_wr[r_champ]['games']
         
-            champ_data.append(round(b_wr - r_wr, 3))
+            champ_data.append(round(b_wr, 3))
+            champ_data.append(round((b_wr - r_wr), 3))
 
             # update total games played and won per champ
             region_champ_wr[b_champ]['games'] += 1
@@ -337,8 +349,18 @@ def create_F2_region_champ_wr(input_df):
 
         # add new row to the output dataframe
         row_data = [y for y in champ_data]
-        new_df = pd.DataFrame([row_data], columns=champ_headers)
+        new_df = pd.DataFrame([row_data], columns=champ_headers2)
         output_df = pd.concat([output_df, new_df], ignore_index=True)
+
+    for col in champ_headers:
+        mean = output_df[col].mean()
+        std = output_df[col].std()
+        output_df[col] = (output_df[col]-mean)/std/3.2
+
+        print(output_df[col].min())
+        print(output_df[col].max())
+
+    
 
     return output_df
 
@@ -357,8 +379,12 @@ def create_F3_player_champ_wr(input_df):
     player_champ_wr = {}
 
     # create a new df
-    champ_headers = ["player_top_wr", "player_jg_wr", "player_mid_wr", "player_adc_wr", "player_sup_wr"]
-    output_df = pd.DataFrame(columns=champ_headers)
+    champ_headers = ["player_top_wr", "player_top_wr_rel", "player_jg_wr", "player_jg_wr_rel", "player_mid_wr", \
+                     "player_mid_wr_rel", "player_adc_wr", "player_adc_wr_rel", "player_sup_wr", "player_sup_wr_rel"]
+    
+    champ_headers2 = ["player_top_wr", "player_jg_wr", "player_mid_wr", "player_adc_wr", "player_sup_wr"]
+
+    output_df = pd.DataFrame(columns=champ_headers2) # TODO: fix champ headers
 
     # grab all the unique gameids from input_df
     gameids = input_df['gameid'].unique()
@@ -390,23 +416,24 @@ def create_F3_player_champ_wr(input_df):
             if b_player not in player_champ_wr: 
                 player_champ_wr[b_player] = {}
                 player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
-                b_wr = 0.0
+                b_wr = 0.5
             elif b_champ not in player_champ_wr[b_player]:
                 player_champ_wr[b_player][b_champ] = {'wins': 0, 'games': 0}
-                b_wr = 0.0
+                b_wr = 0.5
             else:
                 b_wr = player_champ_wr[b_player][b_champ]['wins'] / player_champ_wr[b_player][b_champ]['games']
             
             if r_player not in player_champ_wr: 
                 player_champ_wr[r_player] = {}
                 player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
-                r_wr = 0.0
+                r_wr = 0.5
             elif r_champ not in player_champ_wr[r_player]:
                 player_champ_wr[r_player][r_champ] = {'wins': 0, 'games': 0}
-                r_wr = 0.0
+                r_wr = 0.5
             else:
                 r_wr = player_champ_wr[r_player][r_champ]['wins'] / player_champ_wr[r_player][r_champ]['games']
             
+            # champ_data.append(round(b_wr, 3)) # TODO
             champ_data.append(round(b_wr - r_wr, 3))
 
             # update total games played and won per champ
@@ -420,7 +447,7 @@ def create_F3_player_champ_wr(input_df):
 
         # add new row to the output dataframe
         row_data = [y for y in champ_data]
-        new_df = pd.DataFrame([row_data], columns=champ_headers)
+        new_df = pd.DataFrame([row_data], columns=champ_headers2) # TODO: fix champ headers
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
     return output_df
@@ -584,11 +611,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_result = prev_game_df['result'].iloc[1]
 
             if prev_game_result == 1:
-                F5_wr_dict[blue_team][0] = 5
-                F5_wr_dict[red_team][0] = -5
+                F5_wr_dict[blue_team][0] = 0.05
+                F5_wr_dict[red_team][0] = -0.05
             else:
-                F5_wr_dict[blue_team][0] = -5
-                F5_wr_dict[red_team][0] = 5
+                F5_wr_dict[blue_team][0] = -0.05
+                F5_wr_dict[red_team][0] = 0.05
         
         if game >= 3:
             # get the result of the last two games
@@ -606,11 +633,11 @@ def create_F5_team_momentum(input_df):
                 prev_game_2_result = prev_game_2_df['result'].iloc[1]
 
             if prev_game_result == 1 and prev_game_2_result == 1:
-                F5_wr_dict[blue_team][0] = 10
-                F5_wr_dict[red_team][0] = -10
+                F5_wr_dict[blue_team][0] = 0.1
+                F5_wr_dict[red_team][0] = -0.1
             elif prev_game_result == 0 and prev_game_2_result == 0:
-                F5_wr_dict[blue_team][0] = -10
-                F5_wr_dict[red_team][0] = 10
+                F5_wr_dict[blue_team][0] = -0.1
+                F5_wr_dict[red_team][0] = 0.1
             else:
                 pass # nothing happens, as momentum is already set to 1 or -1
 
@@ -657,21 +684,21 @@ if __name__ == '__main__':
     F2_output_df = create_F2_region_champ_wr(individual_input_df)
 
     # F3 result (per player champion wr)
-    F3_output_df = create_F3_player_champ_wr(individual_input_df)
+    # F3_output_df = create_F3_player_champ_wr(individual_input_df)
 
     # F4 result (per patch champion wr)
     # F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
 
     # F5 result (team momentum)
-    F5_output_df = create_F5_team_momentum(general_input_df)
+    # F5_output_df = create_F5_team_momentum(general_input_df)
 
     # Adding features to the desired final df 
     output_df = pd.DataFrame()
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
-    output_df = pd.concat([output_df, F3_output_df], axis=1)
+    # output_df = pd.concat([output_df, F3_output_df], axis=1)
     # output_df = pd.concat([output_df, F4_output_df], axis=1)
-    output_df = pd.concat([output_df, F5_output_df], axis=1)
+    # output_df = pd.concat([output_df, F5_output_df], axis=1)
 
     # export output df as csv
     export_df_to_csv(output_df, output_filename)

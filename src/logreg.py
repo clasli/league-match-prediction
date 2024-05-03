@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import expit as sigmoid
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedShuffleSplit
+
 
 import pandas as pd
 
@@ -89,22 +91,42 @@ def parse_args():
 
 def read_data(df):
 
-    # Shuffle the DataFrame
+    # # Shuffle the DataFrame
     # df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     
-    # Define features (X) and target (y)
-    global gameids, gamenum
-    gameids = df['gameid'].tolist()
-    gamenum = df['momentum'].tolist()
+    # # Define features (X) and target (y)
+    # global gameids, gamenum
+    # gameids = df['gameid'].tolist()
+    # # gamenum = df['momentum'].tolist()
+    # df = df.drop(columns=['gameid'])
+    # X = df.drop(columns=['result'])  # Assuming 'result' is the target column
+    # y = df['result']
+    
+    # # Split the data into train, test, and dev sets (70/10/20 split)
+    # X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.3, shuffle=False)
+    # X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, shuffle=False)
+
+    # return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
+
+    # Drop unnecessary columns and define features (X) and labels (y)
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
-    
-    # Split the data into train, test, and dev sets (70/10/20 split)
-    X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.3, shuffle=False)
-    X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.66, shuffle=False)
 
+    # Initialize StratifiedShuffleSplit with desired parameters
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.3)
+
+    # Split the data into train and combined test/dev sets
+    for train_index, test_dev_index in sss.split(X, y):
+        X_train, X_test_dev = X.iloc[train_index], X.iloc[test_dev_index]
+        y_train, y_test_dev = y.iloc[train_index], y.iloc[test_dev_index]
+
+    # Further split the combined test/dev set into development and test sets
+    sss_dev_test = StratifiedShuffleSplit(n_splits=1, test_size=0.66)
+    for dev_index, test_index in sss_dev_test.split(X_test_dev, y_test_dev):
+        X_dev, X_test = X_test_dev.iloc[dev_index], X_test_dev.iloc[test_index]
+        y_dev, y_test = y_test_dev.iloc[dev_index], y_test_dev.iloc[test_index]
 
     return gameids, X_train, y_train, X_dev, y_dev, X_test, y_test
 
