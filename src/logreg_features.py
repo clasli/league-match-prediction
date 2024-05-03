@@ -23,6 +23,25 @@ def initialize_team_code_dict():
     team_code_dict['T1'] = 'T1'
     return team_code_dict
 
+def initialize_team_code_dict_lec():
+    team_code_dict = {}
+    team_code_dict['MAD Lions'] = 'MAD'
+    team_code_dict['Team Vitality'] = 'VIT'
+    team_code_dict['Rogue'] = 'RGE'
+    team_code_dict['SK Gaming'] = 'SK'
+    team_code_dict['Excel Esports'] = 'XL'
+    team_code_dict['G2 Esports'] = 'G2'
+    team_code_dict['Astralis'] = 'AST'
+    team_code_dict['Misfits Gaming'] = 'MSF'
+    team_code_dict['Fnatic'] = 'FNC'
+    team_code_dict['Team BDS'] = 'BDS'
+    team_code_dict['KOI'] = 'RGE'
+    team_code_dict['Team Heretics'] = 'MSF'
+    team_code_dict['Karmine Corp'] = 'AST'
+    team_code_dict['GiantX'] = 'XL'
+    team_code_dict['MAD Lions KOI'] = 'MAD'
+    return team_code_dict
+
 def get_list_team_code_dict(team_code_dict):
     return list(team_code_dict.values())
 
