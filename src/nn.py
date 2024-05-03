@@ -14,7 +14,9 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import pandas as pd
 
 num_features = 12
-test_size = 0.25
+test_size = 0.25 # test size 
+val_size = 0.2 # validation size
+# Data Split ... 
 
 def read_data(df):
     gameids = df['gameid'].tolist()
@@ -93,7 +95,7 @@ input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
 input_df = pd.read_csv(input_csv, index_col=0)
 gameids, X_train, y_train, X_test, y_test = read_data(input_df)
 
-history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.2)
+history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=val_size) # validation size
 train_acc = history.history['accuracy'][-1]
 dev_acc = history.history['val_accuracy'][-1]
 
@@ -101,6 +103,18 @@ dev_acc = history.history['val_accuracy'][-1]
 print('    Train Accuracy: {}'.format(train_acc))
 print('    Dev Accuracy: {}'.format(dev_acc))
 test_acc = evaluate(model, X_test, y_test, 'Test')
+
+print("HYPERPARAMETERS")
+print("    Learning Rate: 0.001")
+print("    Batch Size: 32")
+print("    Epochs: 20")
+print("    Dropout: 0.2")
+print("    Batch Normalization: True")
+print("    Optimizer: Adam")
+print("    Loss Function: Binary Cross-Entropy")
+print("    Num-Features:", num_features)
+print("    Validation Size:", val_size)
+print("    Test Size:", test_size)
 
 
 # import torch
