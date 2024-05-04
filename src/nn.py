@@ -22,21 +22,26 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 import pandas as pd
 
+val_size = 0.2 # validation size (of train + val set)
+test_size = 0.25 # test size (of total data)
 num_features = 12 # features
-test_size = 0.25 # test size 
-val_size = 0.2 # validation size
-dropout_rate = 0.4
-epoch_num_hyp = 20
-batch_size_hyp = 32
-batch_norm = True
-init_learning_rate = 0.001  # Example learning rate
-total_iters = 10
-weight_decay_hyp = 0.01
-loss_hyp = 'binary_crossentropy'
-optimizer = 'AdamW'
+
+total_iters = 10 # total number of iterations (to run the model) w/ same hyperparameters to get average accuracy
+epoch_num_hyp = 20 # number of epochs to train the model on 
+batch_size_hyp = 32 # num_samples per batch for training the model
+batch_norm = True # batch normalization which is a technique to improve the training of deep learning models
+
+loss_hyp = 'binary_crossentropy' # binary_crossentropy loss function
+
+optimizer = 'AdamW' # Adam or AdamW
+init_learning_rate = 0.001 # initial learning rate for the optimizer
+weight_decay_hyp = 0.01 # weight decay for AdamW optimizer
+
+dropout_rate = 0.4 # dropout rate to prevent overfitting
+patience_epochs = 10 # early stopping patience aka number of epochs with no improvement after which training will be stopped
 
 class HyperParams:
-    def __init__(self, init_learning_rate, weight_decay, batch_size, epochs, dropout_rate, batch_norm, optimizer, loss_function, num_features, val_size, test_size):
+    def __init__(self, val_size, test_size, num_features, total_iters, num_epochs, batch_size, batch_norm, loss_function, optimizer, init_learning_rate, weight_decay, dropout_rate, patience_epochs):
         self.init_learning_rate = init_learning_rate
         self.weight_decay = weight_decay
         self.batch_size = batch_size
@@ -243,8 +248,16 @@ max_train_acc_set = [0, 0, 0]
 max_dev_acc_set = [0, 0, 0]
 max_test_acc_set = [0, 0, 0]
 
+output_filename = "nn_output.txt"
+output_file = open(output_filename, "w")
+
 for num_iters in range(total_iters): # ranges from 0 to total_iters-1
-    history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size()) # validation size
+    msg = "ITERATION " + str(num_iters) + "\n"
+    print(msg)
+
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    # patience = 5 means that the model will stop training if the validation loss does not improve for 5 consecutive epochs
+    history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size(), callbacks=[early_stopping]) # validation size
     train_acc = history.history['accuracy'][-1]
     dev_acc = history.history['val_accuracy'][-1]
 
