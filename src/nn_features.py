@@ -731,7 +731,7 @@ if __name__ == '__main__':
     F2_output_df = create_F2_region_champ_wr(individual_input_df)
 
     # F3 result (per player champion wr)
-    F3_output_df = create_F3_player_champ_wr(individual_input_df)
+    # F3_output_df = create_F3_player_champ_wr(individual_input_df)
 
     # F4 result (per patch champion wr)
     # F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
