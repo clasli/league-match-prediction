@@ -436,13 +436,13 @@ def create_F3_player_champ_wr(input_df):
         new_df = pd.DataFrame([row_data], columns=champ_headers2) # TODO: fix champ headers
         output_df = pd.concat([output_df, new_df], ignore_index=True)
 
-        for col in champ_headers:
-            mean = output_df[col].mean()
-            std = output_df[col].std()
-            output_df[col] = (output_df[col]-mean)/std/3.2
+    for col in champ_headers:
+        mean = output_df[col].mean()
+        std = output_df[col].std()
+        output_df[col] = (output_df[col]-mean)/std/3.2
 
-            print(output_df[col].min())
-            print(output_df[col].max())
+        print(output_df[col].min())
+        print(output_df[col].max())
 
     return output_df
 
@@ -751,10 +751,10 @@ if __name__ == '__main__':
     output_df = pd.concat([output_df, F0_5_output_df], axis=1)
     output_df = pd.concat([output_df, F1_output_df], axis=1)
     output_df = pd.concat([output_df, F2_output_df], axis=1)
-    output_df = pd.concat([output_df, F3_output_df], axis=1)
+    # output_df = pd.concat([output_df, F3_output_df], axis=1)
     # output_df = pd.concat([output_df, F4_output_df], axis=1)
     # output_df = pd.concat([output_df, F5_output_df], axis=1)
-    output_df = pd.concat([output_df, F6_output_df], axis=1)
+    # output_df = pd.concat([output_df, F6_output_df], axis=1)
     # output_df = pd.concat([output_df, F7_output_df], axis=1)
 
     # export output df as csv
