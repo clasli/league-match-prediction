@@ -329,4 +329,4 @@ print("AVERAGE ACCURACIES")
 print("    [TRAIN]:", average_train_acc/total_iters, "dev:", average_dev_acc/total_iters, "test:", average_test_acc/total_iters)
 
 print("LOSS ON MAX DEV ACC")
-print("    train loss:", max_dev_acc_set[4], "dev loss:", max_dev_acc_set[5])
+print("    train loss:", max_dev_acc_set[3], "dev loss:", max_dev_acc_set[4])
