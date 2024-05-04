@@ -731,7 +731,7 @@ if __name__ == '__main__':
     F2_output_df = create_F2_region_champ_wr(individual_input_df)
 
     # F3 result (per player champion wr)
-    # F3_output_df = create_F3_player_champ_wr(individual_input_df)
+    F3_output_df = create_F3_player_champ_wr(individual_input_df)
 
     # F4 result (per patch champion wr)
     # F4_output_df = create_F4_patch_champ_wr(all_regions_input_df, general_input_df)
@@ -743,18 +743,18 @@ if __name__ == '__main__':
     F6_output_df = create_F6_blueside_team(general_input_df, unique_teams)
 
     # F7 result (per region champion wr)
-    # F7_output_df = create_F7_blueside_team(general_input_df, unique_teams)
+    F7_output_df = create_F7_blueside_team(general_input_df, unique_teams)
 
     # Adding features to the desired final df 
     output_df = pd.DataFrame()
     output_df = pd.concat([output_df, F0_output_df], axis=1)
     output_df = pd.concat([output_df, F0_5_output_df], axis=1)
     output_df = pd.concat([output_df, F1_output_df], axis=1)
-    output_df = pd.concat([output_df, F2_output_df], axis=1)
-    # output_df = pd.concat([output_df, F3_output_df], axis=1)
+    # output_df = pd.concat([output_df, F2_output_df], axis=1)
+    output_df = pd.concat([output_df, F3_output_df], axis=1)
     # output_df = pd.concat([output_df, F4_output_df], axis=1)
     # output_df = pd.concat([output_df, F5_output_df], axis=1)
-    # output_df = pd.concat([output_df, F6_output_df], axis=1)
+    output_df = pd.concat([output_df, F6_output_df], axis=1)
     # output_df = pd.concat([output_df, F7_output_df], axis=1)
 
     # export output df as csv
