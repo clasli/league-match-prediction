@@ -35,9 +35,9 @@ loss_hyp = 'binary_crossentropy' # binary_crossentropy loss function
 
 optimizer = 'AdamW' # Adam or AdamW
 init_learning_rate = 0.001 # initial learning rate for the optimizer
-weight_decay_hyp = 0.01 # weight decay for AdamW optimizer
+weight_decay_hyp = 0.1 # weight decay for AdamW optimizer
 
-dropout_rate = 0.3 # dropout rate to prevent overfitting
+dropout_rate = 0.5 # dropout rate to prevent overfitting
 patience_epochs = 5 # early stopping patience aka number of epochs with no improvement after which training will be stopped
 
 class HyperParams:
@@ -229,25 +229,12 @@ def evaluate(model, X, y, name):
 # loss_function
 # optimizer | init_learning_rate | weight_decay
 # dropout_rate | patience_epochs
-params = HyperParams(val_size, 
-                     test_size, 
-                     num_features, 
-                     total_iters, 
-                     epoch_num_hyp, 
-                     batch_size_hyp, 
-                     batch_norm, 
-                     loss_hyp, 
-                     optimizer, 
-                     init_learning_rate, 
-                     weight_decay_hyp,
-                     dropout_rate,
-                     patience_epochs)
 
 # Fit match_prediction_model
 input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
 input_df = pd.read_csv(input_csv, index_col=0)
 gameids, X_train, y_train, X_test, y_test = read_data(input_df)
-params.set_num_features(X_train.shape[1])
+num_features = (X_train.shape[1])
 
 
 print ("Training Data Shape: ", X_train.shape)
@@ -259,74 +246,122 @@ min_test_acc_set = [1, 1, 1]
 max_train_acc_set = [0, 0, 0]
 max_dev_acc_set = [0, 0, 0]
 max_test_acc_set = [0, 0, 0]
-average_train_acc = 0
-average_dev_acc = 0
-average_test_acc = 0
 
 # DNN = NeuralNetwork(params.get_num_features(), params.get_dropout_rate(), params.get_batch_norm())
 # DNN.print_model_summary()
 
-for num_iters in range(total_iters): # ranges from 0 to total_iters-1
-    DNN = NeuralNetwork(params.get_num_features(), params.get_dropout_rate(), params.get_batch_norm())
+file = open("../data/output/output.txt", "w")
 
-    match_prediction_model = DNN.get_model()
-    # DNN.print_model_summary()
+for dropout_rate in [0.3, 0.5, 0.7]:
+    for weight_decay_hyp in [0.01, 0.1, 0.2, 0.5]:
+        for batch_norm in [True]:
+            params = HyperParams(val_size, 
+                                test_size, 
+                                num_features, 
+                                total_iters, 
+                                epoch_num_hyp, 
+                                batch_size_hyp, 
+                                batch_norm, 
+                                loss_hyp, 
+                                optimizer, 
+                                init_learning_rate, 
+                                weight_decay_hyp,
+                                dropout_rate,
+                                patience_epochs)
+            
+            average_train_acc = 0
+            average_dev_acc = 0
+            average_test_acc = 0
+            average_train_loss = 0
+            average_dev_loss = 0
+            for num_iters in range(total_iters): # ranges from 0 to total_iters-1
+                DNN = NeuralNetwork(params.get_num_features(), params.get_dropout_rate(), params.get_batch_norm())
 
-    DNN.compile_model(params.get_optimizer(), params.get_loss_function())
-    early_stopping = EarlyStopping(monitor='val_loss', patience=params.get_patience_epochs(), restore_best_weights=True)
+                match_prediction_model = DNN.get_model()
+                # DNN.print_model_summary()
 
-    # reset all values
-    history = None
-    train_acc = 0
-    dev_acc = 0
-    test_acc = 0
+                DNN.compile_model(params.get_optimizer(), params.get_loss_function())
+                early_stopping = EarlyStopping(monitor='val_loss', patience=params.get_patience_epochs(), restore_best_weights=True)
 
-    msg = "ITERATION " + str(num_iters) + "\n"
-    print(msg)
+                # reset all values
+                history = None
+                train_acc = 0
+                dev_acc = 0
+                test_acc = 0
 
-    history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size(), callbacks=[early_stopping]) # validation size
-    train_acc = history.history['accuracy'][-1]
-    dev_acc = history.history['val_accuracy'][-1]
-    
+                msg = "ITERATION " + str(num_iters) + "\n"
+                print(msg)
 
-    # Evaluate match_prediction_model
-    print('    Train Accuracy: {}'.format(train_acc))
-    print('    Dev Accuracy: {}'.format(dev_acc))
-    test_acc = evaluate(match_prediction_model, X_test, y_test, 'Test')
-    
-    average_dev_acc += dev_acc
-    average_train_acc += train_acc
-    average_test_acc += test_acc
+                history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size(), callbacks=[early_stopping]) # validation size
+                train_acc = history.history['accuracy'][-1]
+                dev_acc = history.history['val_accuracy'][-1]
+                
 
-    params.print_hyperparameters() # print hyperparameters
+                # Evaluate match_prediction_model
+                print('    Train Accuracy: {}'.format(train_acc))
+                print('    Dev Accuracy: {}'.format(dev_acc))
+                test_acc = evaluate(match_prediction_model, X_test, y_test, 'Test')
+                
+                average_dev_acc += dev_acc
+                average_train_acc += train_acc
+                average_test_acc += test_acc
 
-    train_loss = history.history['loss'][-1]
-    dev_loss = history.history['val_loss'][-1]
-    if train_acc < min_train_acc_set[0]:
-        min_train_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
-    if dev_acc < min_dev_acc_set[1]:
-        min_dev_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
-    if test_acc < min_test_acc_set[2]:
-        min_test_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
-    if train_acc > max_train_acc_set[0]:
-        max_train_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
-    if dev_acc > max_dev_acc_set[1]:
-        max_dev_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
-    if test_acc > max_test_acc_set[2]:
-        max_test_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss]
+                params.print_hyperparameters() # print hyperparameters
+
+                train_loss = history.history['loss'][-1]
+                dev_loss = history.history['val_loss'][-1]
+
+                average_train_loss += train_loss
+                average_dev_loss += dev_loss
+
+            train_acc = average_train_acc/total_iters
+            dev_acc = average_dev_acc/total_iters
+            test_acc = average_test_acc/total_iters
+            train_loss = average_train_loss/total_iters
+            dev_loss = average_dev_loss/total_iters
+
+            hyp = params.return_hyperparameters()
+            file.write(hyp+"\n")
+            file.write(f"Train: acc={train_acc},    loss={train_loss}\n")
+            file.write(f"Dev:   acc={dev_acc},      loss={dev_loss}\n")
+            file.write("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
+            if train_acc < min_train_acc_set[0]:
+                min_train_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+            if dev_acc < min_dev_acc_set[1]:
+                min_dev_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+            if test_acc < min_test_acc_set[2]:
+                min_test_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+            if train_acc > max_train_acc_set[0]:
+                max_train_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+            if dev_acc > max_dev_acc_set[1]:
+                max_dev_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+            if test_acc > max_test_acc_set[2]:
+                max_test_acc_set = [train_acc, dev_acc, test_acc, train_loss, dev_loss, hyp]
+
+
 
 print("MINIMUM ACCURACIES")
 print("    [TRAIN] *TRAIN*:", min_train_acc_set[0], "dev:", min_train_acc_set[1], "test:", min_train_acc_set[2])
+print(min_train_acc_set[5])
 print("    [DEV] train:", min_dev_acc_set[0], "*DEV*:", min_dev_acc_set[1], "test:", min_dev_acc_set[2])
+print(min_dev_acc_set[5])
 print("    [TEST] train:", min_test_acc_set[0], "dev:", min_test_acc_set[1], "*TEST*:", min_test_acc_set[2])
+print(min_test_acc_set[5])
 
 print("MAXIMUM ACCURACIES")
 print("    [TRAIN] *TRAIN*:", max_train_acc_set[0], "dev:", max_train_acc_set[1], "test:", max_train_acc_set[2])
+print(max_train_acc_set[5])
 print("    [DEV] train:", max_dev_acc_set[0], "*DEV*:", max_dev_acc_set[1], "test:", max_dev_acc_set[2])
+print(max_dev_acc_set[5])
 print("    [TEST] train:", max_test_acc_set[0], "dev:", max_test_acc_set[1], "*TEST*:", max_test_acc_set[2])
+print(max_test_acc_set[5])
 
-print("AVERAGE ACCURACIES")
-print("    [TRAIN]:", average_train_acc/total_iters, "dev:", average_dev_acc/total_iters, "test:", average_test_acc/total_iters)
+
+# print("AVERAGE ACCURACIES")
+# print("    [TRAIN]:", average_train_acc/total_iters, "dev:", average_dev_acc/total_iters, "test:", average_test_acc/total_iters)
 
 print("LOSS ON MAX DEV ACC")
 print("    train loss:", max_dev_acc_set[3], "dev loss:", max_dev_acc_set[4])
+
+file.close()

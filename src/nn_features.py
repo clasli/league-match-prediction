@@ -750,12 +750,12 @@ if __name__ == '__main__':
     output_df = pd.concat([output_df, F0_output_df], axis=1)
     output_df = pd.concat([output_df, F0_5_output_df], axis=1)
     output_df = pd.concat([output_df, F1_output_df], axis=1)
-    # output_df = pd.concat([output_df, F2_output_df], axis=1)
+    output_df = pd.concat([output_df, F2_output_df], axis=1)
     output_df = pd.concat([output_df, F3_output_df], axis=1)
     # output_df = pd.concat([output_df, F4_output_df], axis=1)
     # output_df = pd.concat([output_df, F5_output_df], axis=1)
     output_df = pd.concat([output_df, F6_output_df], axis=1)
-    # output_df = pd.concat([output_df, F7_output_df], axis=1)
+    output_df = pd.concat([output_df, F7_output_df], axis=1)
 
     # export output df as csv
     export_df_to_csv(output_df, output_filename)
