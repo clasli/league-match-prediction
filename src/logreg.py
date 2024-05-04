@@ -136,8 +136,9 @@ def read_data(df):
 
 def main():
     # Read the data
-    input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
-    input_df = pd.read_csv(input_csv, index_col=0)
+    old_features_input_csv = "../data/2023/2023_LCK_LogReg_Dataset_No_F4.csv"
+    new_features_input_csv = "../data/output/LCK_LogReg_Dataset_No_F4.csv"
+    input_df = pd.read_csv(new_features_input_csv, index_col=0)
     gameids, X_train, y_train, X_dev, y_dev, X_test, y_test = read_data(input_df)
 
     # all_data = np.load('q1_data.npy', allow_pickle=True).item()
@@ -149,6 +150,10 @@ def main():
     # y_test = all_data['y_test']
 
     # SWEEP THROUGH POSSIBLE HYPERPARAMETERS, remember the current best settings
+    lr_history = []
+    l2_history = []
+    train_history = []
+    dev_history = []
     if OPTS.sweep:
         best_dev_acc = 0
         best_lr = 0
@@ -156,30 +161,37 @@ def main():
         best_iter = 0
         lr = 0.1
         iter = 5000
-        # for lr in [0.1, 0.2, 0.5, 1, 2]: # Learning rate
-        for l2 in [0.0, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0]: # L2 regularization
-            # for iter in [1000, 5000, 7500]: # Number of iterations
-            print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
-            # Train with gradient descent
-            w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)
+        for lr in [0.1, 0.2]: # Learning rate
+            for l2 in [0.0, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0]: # L2 regularization
+                lr_history.append(lr)
+                l2_history.append(l2)
+                # for iter in [1000, 5000, 7500]: # Number of iterations
+                print(f"LR: {lr}, L2: {l2}, Iter: {iter}")
+                # Train with gradient descent
+                w = train(X_train, y_train, lr=lr, num_iters=iter, l2_reg=l2)
 
-            # Evaluate model
-            train_acc = evaluate(w, X_train, y_train, 'Train')
-            dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
-            if dev_acc > best_dev_acc:
-                best_dev_acc = dev_acc
-                best_lr = lr
-                best_l2 = l2
-                best_iter = iter
-                best_w = w
-            if OPTS.test:
-                test_acc = evaluate(w, X_test, y_test, 'Test')
+                # Evaluate model
+                train_acc = evaluate(w, X_train, y_train, 'Train')
+                dev_acc = evaluate(w, X_dev, y_dev, 'Dev')
+                train_history.append(train_acc)
+                dev_history.append(dev_acc)
+                if dev_acc > best_dev_acc:
+                    best_dev_acc = dev_acc
+                    best_lr = lr
+                    best_l2 = l2
+                    best_iter = iter
+                    best_w = w
+                if OPTS.test:
+                    test_acc = evaluate(w, X_test, y_test, 'Test')
 
         print(f"Best Dev Accuracy: {best_dev_acc}")
         print(f"Best LR: {best_lr}")
         print(f"Best L2: {best_l2}")
         print(f"Best Iter: {best_iter}")
         print(f"Best Weights: {best_w}")
+
+        for i in range(len(lr_history)):
+            print(f"LR: {lr_history[i]}, L2: {l2_history[i]}, Train Acc: {train_history[i]}, Dev Acc: {dev_history[i]}")
     else:
         print(f"LR: {OPTS.learning_rate}, L2: {OPTS.l2}, Iter: {OPTS.num_iters}")
         # Train with gradient descent
