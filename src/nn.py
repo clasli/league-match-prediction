@@ -264,6 +264,9 @@ min_test_acc_set = [1, 1, 1]
 max_train_acc_set = [0, 0, 0]
 max_dev_acc_set = [0, 0, 0]
 max_test_acc_set = [0, 0, 0]
+average_train_acc = 0
+average_dev_acc = 0
+average_test_acc = 0
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
@@ -280,11 +283,16 @@ for num_iters in range(total_iters): # ranges from 0 to total_iters-1
     history = match_prediction_model.fit(X_train, y_train, epochs=params.get_epochs(), batch_size=params.get_batch_size(), validation_split=params.get_val_size(), callbacks=[early_stopping]) # validation size
     train_acc = history.history['accuracy'][-1]
     dev_acc = history.history['val_accuracy'][-1]
+    
 
     # Evaluate match_prediction_model
     print('    Train Accuracy: {}'.format(train_acc))
     print('    Dev Accuracy: {}'.format(dev_acc))
     test_acc = evaluate(match_prediction_model, X_test, y_test, 'Test')
+    
+    average_dev_acc += dev_acc
+    average_train_acc += train_acc
+    average_test_acc += test_acc
 
     params.print_hyperparameters() # print hyperparameters
 
@@ -310,3 +318,6 @@ print("MAXIMUM ACCURACIES")
 print("    [TRAIN] *TRAIN*:", max_train_acc_set[0], "dev:", max_train_acc_set[1], "test:", max_train_acc_set[2])
 print("    [DEV] train:", max_dev_acc_set[0], "*DEV*:", max_dev_acc_set[1], "test:", max_dev_acc_set[2])
 print("    [TEST] train:", max_test_acc_set[0], "dev:", max_test_acc_set[1], "*TEST*:", max_test_acc_set[2])
+
+print("AVERAGE ACCURACIES")
+print("    [TRAIN]:", average_train_acc/total_iters, "dev:", average_dev_acc/total_iters, "test:", average_test_acc/total_iters)
