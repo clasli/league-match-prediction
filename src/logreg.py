@@ -32,7 +32,8 @@ def predict(w, X):
     """
     signs = np.sign(X.dot(w.T))
     # print(w)
-    return np.where(signs == -1, 0, signs)
+    # return np.where(signs == -1, 0, signs)
+    return signs
 
 def train(X_train, y_train, lr=1e-1, num_iters=5000, l2_reg=0.0):
     print("LR is: ", lr)
@@ -117,6 +118,8 @@ def read_data(df):
     df = df.drop(columns=['gameid'])
     X = df.drop(columns=['result'])  # Assuming 'result' is the target column
     y = df['result']
+    y = y.replace(0, -1)
+
 
     # Initialize StratifiedShuffleSplit with desired parameters
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
